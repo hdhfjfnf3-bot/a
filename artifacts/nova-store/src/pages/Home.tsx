@@ -4,6 +4,167 @@ import { ArrowLeft, ShieldCheck, Truck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useGetProducts } from "@workspace/api-client-react";
+import { useEffect, useRef } from "react";
+
+function LuxuryCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+
+    const resize = () => {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+
+    // Particles
+    const PARTICLE_COUNT = 120;
+    type Particle = {
+      x: number; y: number; vx: number; vy: number;
+      size: number; opacity: number; hue: number; life: number; maxLife: number;
+    };
+    const particles: Particle[] = Array.from({ length: PARTICLE_COUNT }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: -Math.random() * 0.6 - 0.2,
+      size: Math.random() * 3 + 0.5,
+      opacity: Math.random(),
+      hue: 40 + Math.random() * 20,
+      life: Math.random() * 300,
+      maxLife: 200 + Math.random() * 200,
+    }));
+
+    // Light beams
+    const BEAMS = 5;
+    type Beam = { x: number; angle: number; width: number; speed: number; opacity: number; };
+    const beams: Beam[] = Array.from({ length: BEAMS }, (_, i) => ({
+      x: (w / (BEAMS + 1)) * (i + 1),
+      angle: -0.3 + Math.random() * 0.6,
+      width: 60 + Math.random() * 100,
+      speed: 0.0003 + Math.random() * 0.0003,
+      opacity: 0.03 + Math.random() * 0.04,
+    }));
+
+    let t = 0;
+
+    const draw = () => {
+      t++;
+      ctx.clearRect(0, 0, w, h);
+
+      // Deep dark background
+      const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.8);
+      bgGrad.addColorStop(0, "#0d0a06");
+      bgGrad.addColorStop(0.5, "#080603");
+      bgGrad.addColorStop(1, "#030200");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Ambient gold glow center
+      const centerGlow = ctx.createRadialGradient(w / 2, h * 0.45, 0, w / 2, h * 0.45, w * 0.4);
+      centerGlow.addColorStop(0, "rgba(212,175,55,0.07)");
+      centerGlow.addColorStop(0.5, "rgba(180,140,20,0.03)");
+      centerGlow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = centerGlow;
+      ctx.fillRect(0, 0, w, h);
+
+      // Light beams
+      beams.forEach((beam) => {
+        const pulse = 0.6 + 0.4 * Math.sin(t * beam.speed * 200);
+        ctx.save();
+        ctx.translate(beam.x + Math.sin(t * beam.speed * 40) * 80, 0);
+        ctx.rotate(beam.angle + Math.sin(t * beam.speed * 20) * 0.05);
+        const beamGrad = ctx.createLinearGradient(0, 0, 0, h);
+        beamGrad.addColorStop(0, `rgba(212,175,55,0)`);
+        beamGrad.addColorStop(0.2, `rgba(212,175,55,${beam.opacity * pulse})`);
+        beamGrad.addColorStop(0.7, `rgba(212,175,55,${beam.opacity * pulse * 0.5})`);
+        beamGrad.addColorStop(1, `rgba(212,175,55,0)`);
+        ctx.fillStyle = beamGrad;
+        ctx.fillRect(-beam.width / 2, 0, beam.width, h);
+        ctx.restore();
+      });
+
+      // Particles
+      particles.forEach((p) => {
+        p.life++;
+        if (p.life > p.maxLife) {
+          p.x = Math.random() * w;
+          p.y = h + 10;
+          p.vx = (Math.random() - 0.5) * 0.4;
+          p.vy = -Math.random() * 0.6 - 0.2;
+          p.life = 0;
+          p.maxLife = 200 + Math.random() * 200;
+          p.size = Math.random() * 3 + 0.5;
+          p.hue = 40 + Math.random() * 20;
+        }
+        p.x += p.vx + Math.sin(t * 0.005 + p.y * 0.01) * 0.15;
+        p.y += p.vy;
+        const lifeRatio = p.life / p.maxLife;
+        const alpha = lifeRatio < 0.2
+          ? lifeRatio * 5
+          : lifeRatio > 0.8
+          ? (1 - lifeRatio) * 5
+          : 1;
+
+        // Glow
+        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+        grd.addColorStop(0, `hsla(${p.hue},80%,65%,${alpha * 0.8})`);
+        grd.addColorStop(1, `hsla(${p.hue},80%,55%,0)`);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},90%,80%,${alpha})`;
+        ctx.fill();
+      });
+
+      // Horizontal shimmer lines
+      for (let i = 0; i < 3; i++) {
+        const lineY = ((h * (i + 1)) / 4 + Math.sin(t * 0.002 + i) * 30) % h;
+        const lineAlpha = 0.03 + 0.02 * Math.sin(t * 0.01 + i * 2);
+        const lineGrad = ctx.createLinearGradient(0, lineY, w, lineY);
+        lineGrad.addColorStop(0, "rgba(212,175,55,0)");
+        lineGrad.addColorStop(0.3, `rgba(212,175,55,${lineAlpha})`);
+        lineGrad.addColorStop(0.7, `rgba(212,175,55,${lineAlpha})`);
+        lineGrad.addColorStop(1, "rgba(212,175,55,0)");
+        ctx.strokeStyle = lineGrad;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, lineY);
+        ctx.lineTo(w, lineY);
+        ctx.stroke();
+      }
+
+      animId = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full"
+      style={{ zIndex: 0 }}
+    />
+  );
+}
 
 export function Home() {
   const { scrollYProgress } = useScroll();
@@ -22,19 +183,18 @@ export function Home() {
     <div className="min-h-screen">
       {/* HERO SECTION */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Abstract Background Elements */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={`${import.meta.env.BASE_URL}images/nova-hero.png`}
-            alt="Nova Luxury Hero Background"
-            className="w-full h-full object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
+        {/* Animated Canvas Background */}
+        <LuxuryCanvas />
+
+        {/* Overlay gradient to blend into page */}
+        <div className="absolute inset-0 z-[1] pointer-events-none">
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background/60 to-transparent" />
         </div>
 
         <motion.div 
           style={{ y: y1, opacity }}
-          className="container relative z-10 mx-auto px-4 text-center mt-20"
+          className="container relative z-[10] mx-auto px-4 text-center mt-20"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
