@@ -46,9 +46,11 @@ export function Navbar() {
           
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <span className="font-luxury text-3xl font-bold tracking-widest text-gradient-gold">
-              NOVA
-            </span>
+            <img
+              src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`}
+              alt="NOVA"
+              className="h-12 w-auto object-contain rounded-lg drop-shadow-[0_0_12px_rgba(212,175,55,0.5)]"
+            />
           </Link>
 
           {/* Desktop Nav */}

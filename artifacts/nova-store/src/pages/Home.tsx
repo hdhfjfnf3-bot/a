@@ -203,9 +203,9 @@ export function Home() {
             className="mb-8 flex justify-center"
           >
             <img 
-              src={`${import.meta.env.BASE_URL}images/nova-logo.png`} 
+              src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`} 
               alt="NOVA" 
-              className="w-48 h-48 md:w-64 md:h-64 object-contain drop-shadow-[0_0_30px_rgba(212,175,55,0.5)]"
+              className="w-56 md:w-80 object-contain rounded-2xl drop-shadow-[0_0_40px_rgba(212,175,55,0.6)]"
             />
           </motion.div>
           

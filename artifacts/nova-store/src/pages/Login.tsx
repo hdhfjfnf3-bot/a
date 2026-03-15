@@ -46,7 +46,11 @@ export function Login() {
       >
         <div className="text-center mb-8">
           <Link href="/">
-            <span className="font-luxury text-4xl font-bold text-gradient-gold inline-block mb-6 cursor-pointer">NOVA</span>
+            <img
+              src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`}
+              alt="NOVA"
+              className="h-24 w-auto object-contain rounded-xl mx-auto mb-4 drop-shadow-[0_0_20px_rgba(212,175,55,0.5)] cursor-pointer"
+            />
           </Link>
           <h1 className="text-2xl font-bold mb-2 text-foreground">تسجيل الدخول</h1>
           <p className="text-muted-foreground">مرحباً بك مجدداً في عالم الرفاهية</p>
