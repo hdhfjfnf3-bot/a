@@ -1,0 +1,23 @@
+packages:
+  "framer-motion": "For stunning 3D, scroll animations, and page transitions"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For Zod form validation integration"
+  "clsx": "For conditional class merging"
+  "tailwind-merge": "For merging tailwind classes without conflicts"
+  "lucide-react": "For beautiful consistent iconography"
+
+images:
+  - path: "artifacts/nova-store/public/images/nova-hero.png"
+    description: "Cinematic 3D dark luxury background with elegant floating gold geometric shapes, deep black atmosphere with soft golden lighting, extremely premium and rich, 8k resolution"
+    aspect_ratio: "16:9"
+  - path: "artifacts/nova-store/public/images/nova-logo.png"
+    description: "Ultra premium luxury logo for 'NOVA', minimalist gold metallic typography on pure black background, elegant serif font, high-end fashion vibe"
+    aspect_ratio: "1:1"
+  - path: "artifacts/nova-store/public/images/auth-bg.png"
+    description: "Abstract luxurious dark silk fabric texture with subtle gold dust particles, elegant and mysterious background"
+    aspect_ratio: "9:16"
+
+notes:
+  - "The UI is strictly right-to-left (RTL) for Arabic."
+  - "Uses generated API hooks from @workspace/api-client-react."
+  - "Luxury dark theme with gold accents configured in index.css."
