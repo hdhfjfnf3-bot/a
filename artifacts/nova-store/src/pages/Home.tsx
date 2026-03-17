@@ -9,23 +9,27 @@ import { useReveal } from "@/components/RevealSystem";
 import { useRef, useState, useCallback } from "react";
 
 /* ─── خلفية فيديو متتالية ─── */
-const BG_VIDEOS = ["video_bg1.mp4", "video_bg2.mp4"];
+const BG_VIDEOS = ["video_bg2.mp4", "video_bg1.mp4"];
 
-function VideoBackground() {
+function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => void }) {
   const [idx, setIdx] = useState(0);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   const onEnded = useCallback(() => {
-    setIdx(prev => (prev + 1) % BG_VIDEOS.length);
-  }, []);
+    setIdx(prev => {
+      const nextIdx = (prev + 1) % BG_VIDEOS.length;
+      onVideoChange(nextIdx);
+      return nextIdx;
+    });
+  }, [onVideoChange]);
 
   React.useEffect(() => {
     const currentVideo = videoRefs.current[idx];
     if (currentVideo) {
       currentVideo.currentTime = 0;
-      currentVideo.play().catch(() => {});
+      currentVideo.play().catch(() => { });
     }
-    
+
     // التحميل المسبق للفيديو التالي أثناء تشغيل الحالي
     const nextIdx = (idx + 1) % BG_VIDEOS.length;
     const nextVideo = videoRefs.current[nextIdx];
@@ -46,9 +50,8 @@ function VideoBackground() {
           autoPlay={i === 0}
           preload={i === 0 ? "auto" : "none"}
           onEnded={i === idx ? onEnded : undefined}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-            i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
-          }`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
+            }`}
         />
       ))}
       {/* تعتيم فاخر */}
@@ -111,11 +114,14 @@ export function Home() {
   const { revealed } = useReveal();
   const { data: products, isLoading } = useGetProducts({ featured: true });
 
+  // تتبع الفيديو الحالي لإظهار/إخفاء اللوجو
+  const [bgVideoIdx, setBgVideoIdx] = useState(0);
+
   const features = [
-    { icon: Truck,      title: "شحن سريع لكل مصر",    desc: "توصيل لجميع المحافظات في أسرع وقت ممكن" },
-    { icon: ShieldCheck,title: "ضمان الجودة 100%",     desc: "منتجات أصلية ومضمونة أو استرداد كامل" },
-    { icon: Clock,      title: "دعم 24/7",              desc: "فريق خدمة عملاء جاهز لمساعدتك في أي وقت" },
-    { icon: Crown,      title: "منتجات حصرية فاخرة",   desc: "مختارة بعناية فائقة لتناسب ذوقك الرفيع" },
+    { icon: Truck, title: "شحن سريع لكل مصر", desc: "توصيل لجميع المحافظات في أسرع وقت ممكن" },
+    { icon: ShieldCheck, title: "ضمان الجودة 100%", desc: "منتجات أصلية ومضمونة أو استرداد كامل" },
+    { icon: Clock, title: "دعم 24/7", desc: "فريق خدمة عملاء جاهز لمساعدتك في أي وقت" },
+    { icon: Crown, title: "منتجات حصرية فاخرة", desc: "مختارة بعناية فائقة لتناسب ذوقك الرفيع" },
   ];
 
   return (
@@ -123,7 +129,7 @@ export function Home() {
 
       {/* ══════════════ HERO ══════════════ */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <VideoBackground />
+        <VideoBackground onVideoChange={setBgVideoIdx} />
 
         {/* Gradient overlays */}
         <div className="absolute inset-0 z-[1] pointer-events-none">
@@ -159,10 +165,15 @@ export function Home() {
           </motion.div>
 
           {/* Logo */}
+          {/* يختفي اللوجو في الفيديو الأول (0) ويظهر في الثاني (1) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
-            animate={revealed ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.34, 1.56, 0.64, 1] }}
+            animate={
+              revealed && bgVideoIdx === 1
+                ? { opacity: 1, scale: 1, display: "flex" }
+                : { opacity: 0, scale: 0.85, transitionEnd: { display: "none" } }
+            }
+            transition={{ duration: 0.9, ease: [0.34, 1.56, 0.64, 1] }}
             className="mb-8 flex justify-center"
           >
             <img
