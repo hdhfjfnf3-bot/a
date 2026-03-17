@@ -34,7 +34,14 @@ async function setupDb() {
 }
 
 setupDb().then(() => {
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-  });
+  // Only listen if not running in Vercel
+  if (process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1") {
+    app.listen(port, () => {
+      console.log(`Server listening on port ${port}`);
+    });
+  }
 }).catch(console.error);
+
+export default app;
+// @ts-ignore
+module.exports = app;
