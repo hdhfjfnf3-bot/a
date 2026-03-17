@@ -2,6 +2,9 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useState } from "react";
+import { NovaLoader } from "./components/NovaLoader";
+import { RevealProvider, RevealItem } from "./components/RevealSystem";
 
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
@@ -12,6 +15,7 @@ import { OrderPage } from "./pages/Order";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Admin } from "./pages/Admin";
+import { Notifications } from "./pages/Notifications";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
@@ -33,24 +37,47 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/admin" component={Admin} />
+      <Route path="/notifications" component={Notifications} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
+  const [revealed, setRevealed] = useState(false);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <div className="flex flex-col min-h-screen bg-background text-foreground">
-            <Navbar />
-            <main className="flex-grow">
-              <Router />
-            </main>
-            <Footer />
-          </div>
-        </WouterRouter>
+        {/* اللودر — يُشغَّل دائماً عند البداية */}
+        {!revealed && <NovaLoader onDone={() => setRevealed(true)} />}
+
+        {/* الموقع — يظهر عنصراً عنصراً بعد انتهاء اللودر */}
+        <RevealProvider revealed={revealed}>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <div className="flex flex-col min-h-screen bg-background text-foreground">
+
+              {/* الـ Navbar يظهر أولاً */}
+              <RevealItem delay={0} dir="down">
+                <Navbar />
+              </RevealItem>
+
+              {/* المحتوى الرئيسي يظهر بعده */}
+              <RevealItem delay={0.18} dir="up" className="flex-grow">
+                <main>
+                  <Router />
+                </main>
+              </RevealItem>
+
+              {/* الفوتر آخراً */}
+              <RevealItem delay={0.32} dir="up">
+                <Footer />
+              </RevealItem>
+
+            </div>
+          </WouterRouter>
+        </RevealProvider>
+
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

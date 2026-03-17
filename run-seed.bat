@@ -1,0 +1,8 @@
+@echo off
+set SUPABASE_URL=https://lopqvaepgpzemswxiqzr.supabase.co
+set SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvcHF2YWVwZ3B6ZW1zd3hpcXpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzUzNzQ1NiwiZXhwIjoyMDg5MTEzNDU2fQ.kwEeEVnaJFUmiGZpqjLddZLE6TOnlNwd_RPBhQ2md_Y
+echo Running seed...
+cd artifacts\api-server
+pnpm exec tsx src/seed.ts
+cd ..\..
+pause

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { ShoppingBag, User, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import { ShoppingBag, User, Menu, X, LogOut, LayoutDashboard, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
@@ -12,7 +12,7 @@ export function Navbar() {
   const [location] = useLocation();
   const queryClient = useQueryClient();
 
-  const { data: user } = useGetMe({ query: { retry: false } });
+  const { data: user } = useGetMe({ query: { retry: false, queryKey: ['/api/auth/me'] } });
   const { mutate: logout } = useLogout({
     mutation: {
       onSuccess: () => {
@@ -82,8 +82,14 @@ export function Navbar() {
                 )}
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <User className="w-5 h-5 text-primary" />
-                  <span>{user.fullName.split(' ')[0]}</span>
+                  <span>{user.fullName?.split(' ')[0] || 'مستخدم'}</span>
                 </div>
+                {/* Notification Bell */}
+                <Link href="/notifications">
+                  <button className="relative p-2 rounded-full hover:bg-primary/10 transition-colors" title="الإشعارات">
+                    <Bell className="w-5 h-5 text-primary" />
+                  </button>
+                </Link>
                 <Button variant="ghost" size="icon" onClick={() => logout()} title="تسجيل خروج">
                   <LogOut className="w-5 h-5 text-destructive" />
                 </Button>
@@ -142,6 +148,12 @@ export function Navbar() {
                     </Button>
                   </Link>
                 )}
+                <Link href="/notifications" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Bell className="w-4 h-4" />
+                    الإشعارات
+                  </Button>
+                </Link>
                 <Button variant="ghost" className="w-full justify-start gap-2 text-destructive" onClick={() => logout()}>
                   <LogOut className="w-4 h-4" />
                   تسجيل خروج

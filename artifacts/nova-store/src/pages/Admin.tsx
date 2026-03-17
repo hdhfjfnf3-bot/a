@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   useGetMe, useGetOrders, useGetProducts, useGetCategories,
   useUpdateOrderStatus, useCreateProduct, useUpdateProduct, useDeleteProduct, useCreateCategory,
@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatPrice } from "@/lib/utils";
 import {
   Package, ShoppingBag, TrendingUp, RefreshCw, Plus, Pencil, Trash2,
-  X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, MapPin, Phone, Facebook
+  X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, MapPin, Phone, Facebook,
+  Upload, ImagePlus, Loader2, MessageCircle, Send
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 
 /* ─── tiny modal ─── */
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -48,22 +50,106 @@ function ProductForm({ initial, onSave, onClose, categories }: {
   onClose: () => void;
   categories: any[];
 }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<ProductFormData>({
+  // الصور: نبدأ بالصور الموجودة إن كان تعديلاً
+  const initImages: string[] = Array.isArray((initial as any)?.images)
+    ? (initial as any).images
+    : String((initial as any)?.images || "").split("\n").map((s: string) => s.trim()).filter(Boolean);
+
+  const [uploadedImages, setUploadedImages] = useState<string[]>(initImages);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        if (data.url) urls.push(data.url);
+      }
+      setUploadedImages(prev => [...prev, ...urls]);
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert("فشل رفع الصورة، تأكد أن السيرفر شتغال");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
+
+  const removeImage = (idx: number) =>
+    setUploadedImages(prev => prev.filter((_, i) => i !== idx));
+
+  // حساب الخصم المبدئي
+  const initOrigPrice = (initial as any)?.originalPrice ? Number((initial as any).originalPrice) : 0;
+  const initPrice = initial?.price ? Number(initial.price) : 0;
+  const initDiscount = initOrigPrice > 0 && initPrice > 0
+    ? Math.round((1 - initPrice / initOrigPrice) * 100)
+    : 0;
+
+  const [origPrice, setOrigPrice] = useState(initOrigPrice);
+  const [finalPrice, setFinalPrice] = useState(initPrice);
+  const [discountPct, setDiscountPct] = useState(initDiscount);
+
+  const handleOrigPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setOrigPrice(val);
+    if (val > 0) {
+      const d = initial?.id ? discountPct : 30; // 30% افتراضي للمنتج الجديد
+      setDiscountPct(d);
+      setFinalPrice(Math.round(val * (1 - d / 100)));
+    }
+  };
+
+  const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let d = Number(e.target.value);
+    if (d > 90) d = 90; // أقصى خصم 90%
+    if (d < 0) d = 0;
+    setDiscountPct(d);
+    if (origPrice > 0) setFinalPrice(Math.round(origPrice * (1 - d / 100)));
+  };
+
+  const handleFinalPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setFinalPrice(val);
+    if (origPrice > 0 && val > 0) {
+      const d = Math.round((1 - val / origPrice) * 100);
+      setDiscountPct(Math.min(Math.max(d, 0), 90));
+    }
+  };
+
+  const { register, handleSubmit } = useForm<ProductFormData>({
     defaultValues: {
       name: initial?.name || "", nameAr: initial?.nameAr || "",
       description: initial?.description || "", descriptionAr: initial?.descriptionAr || "",
       price: initial?.price || 0, originalPrice: (initial as any)?.originalPrice || 0,
-      images: Array.isArray((initial as any)?.images) ? (initial as any).images.join("\n") : ((initial as any)?.images || ""),
       categoryId: initial?.categoryId || 0, stock: initial?.stock || 0,
       featured: initial?.featured || false, badge: initial?.badge || "",
     }
   });
+
   const submit = (d: ProductFormData) => {
+    if (uploadedImages.length === 0) {
+      alert("يرجى رفع صورة واحدة على الأقل للمنتج");
+      return;
+    }
+    // تطبيق الحد الأقصى للخصم 90%
+    let fp = finalPrice > 0 ? finalPrice : Number(d.price);
+    const op = origPrice > 0 ? origPrice : Number(d.originalPrice);
+    if (op > 0 && fp < op * 0.1) {
+      fp = Math.round(op * 0.1);
+      alert("تم تعديل السعر: أقصى خصم مسموح 90%");
+    }
     onSave({
       ...d,
-      price: Number(d.price),
-      originalPrice: Number(d.originalPrice) || undefined,
-      images: String(d.images).split("\n").map(s => s.trim()).filter(Boolean),
+      price: fp,
+      originalPrice: op || undefined,
+      images: uploadedImages,
       categoryId: Number(d.categoryId) || undefined,
       stock: Number(d.stock),
       featured: Boolean(d.featured),
@@ -80,13 +166,44 @@ function ProductForm({ initial, onSave, onClose, categories }: {
           <label className="text-sm font-medium">الاسم بالعربية *</label>
           <Input {...register("nameAr", { required: true })} placeholder="اسم المنتج" />
         </div>
-        <div className="space-y-1">
-          <label className="text-sm font-medium">السعر (جنيه) *</label>
-          <Input type="number" {...register("price", { required: true })} placeholder="0" dir="ltr" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm font-medium">السعر قبل الخصم</label>
-          <Input type="number" {...register("originalPrice")} placeholder="0" dir="ltr" />
+
+        {/* حاسبة الخصم الذكية */}
+        <div className="col-span-2 grid grid-cols-3 gap-3 bg-white/5 p-3 rounded-xl border border-amber-500/20">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">السعر الأصلي</label>
+            <Input
+              type="number"
+              value={origPrice || ""}
+              onChange={handleOrigPriceChange}
+              placeholder="0"
+              dir="ltr"
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-primary">خصم % <span className="text-muted-foreground">(max 90)</span></label>
+            <Input
+              type="number"
+              value={discountPct || ""}
+              onChange={handleDiscountChange}
+              placeholder="30"
+              min={0}
+              max={90}
+              dir="ltr"
+              className="h-9 border-primary/40"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-green-400">السعر النهائي *</label>
+            <Input
+              type="number"
+              value={finalPrice || ""}
+              onChange={handleFinalPriceChange}
+              placeholder="0"
+              dir="ltr"
+              className="h-9 border-green-500/30"
+            />
+          </div>
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium">المخزون *</label>
@@ -104,10 +221,55 @@ function ProductForm({ initial, onSave, onClose, categories }: {
         <label className="text-sm font-medium">بادج (مثال: جديد، الأكثر مبيعاً)</label>
         <Input {...register("badge")} placeholder="الأكثر مبيعاً" />
       </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium">روابط الصور (رابط في كل سطر) *</label>
-        <Textarea {...register("images", { required: true })} placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"} rows={3} dir="ltr" className="font-mono text-xs" />
-        <p className="text-xs text-muted-foreground">حط كل رابط في سطر منفصل</p>
+      {/* رفع الصور */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">صور المنتج *</label>
+
+        {/* منطقة الرفع */}
+        <div
+          className="border-2 border-dashed border-amber-500/40 rounded-xl p-4 text-center cursor-pointer hover:border-amber-500/70 hover:bg-amber-500/5 transition-all"
+          onClick={() => !uploading && fileInputRef.current?.click()}
+        >
+          {uploading ? (
+            <div className="flex items-center justify-center gap-2 text-amber-400 py-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">جارِ الرفع...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-1 py-2">
+              <ImagePlus className="w-8 h-8 text-amber-500/60" />
+              <p className="text-sm text-muted-foreground">اضغط لرفع صورة أو أكثر</p>
+              <p className="text-xs text-muted-foreground/60">JPG, PNG, WEBP حتى 5MB</p>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+        </div>
+
+        {/* معاينة الصور المرفوعة */}
+        {uploadedImages.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {uploadedImages.map((url, idx) => (
+              <div key={idx} className="relative group rounded-lg overflow-hidden aspect-square border border-border">
+                <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  className="absolute top-1 left-1 bg-red-500/80 hover:bg-red-600 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium">وصف المنتج (عربي)</label>
@@ -224,19 +386,54 @@ function OrderRow({ order, onStatusChange }: { order: any; onStatusChange: (id: 
 /* ─── main admin page ─── */
 export function Admin() {
   const queryClient = useQueryClient();
-  const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories'>('orders');
+  const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false, queryKey: ['/api/auth/me'] } });
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'chats'>('orders');
   const [productModal, setProductModal] = useState<null | 'add' | { id: number }>(null);
   const [catModal, setCatModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [orderSearch, setOrderSearch] = useState("");
+  const [messagesRaw, setMessagesRaw] = useState<any[]>([]);
+  const [activeChat, setActiveChat] = useState<{ phone: string, productId: number } | null>(null);
+  const [adminReply, setAdminReply] = useState("");
 
-  const { data: orders, isLoading: isOrdersLoading } = useGetOrders({ query: { enabled: user?.role === 'admin' } });
-  const { data: products, isLoading: isProductsLoading } = useGetProducts(undefined, { query: { enabled: user?.role === 'admin' } });
-  const { data: categories } = useGetCategories({ query: { enabled: true } });
+  const { data: orders, isLoading: isOrdersLoading } = useGetOrders({ query: { enabled: user?.role === 'admin', queryKey: ['/api/orders'] } });
+  const { data: productsRaw, isLoading: isProductsLoading } = useGetProducts(undefined, { query: { enabled: user?.role === 'admin', queryKey: ['/api/products'] } });
+  const { data: categoriesRaw } = useGetCategories({ query: { enabled: true, queryKey: ['/api/categories'] } });
+  const toArr = (d: any) => Array.isArray(d) ? d : (d?.data ?? []);
+  const products = toArr(productsRaw);
+  const categories = toArr(categoriesRaw);
+
+  const fetchAdminMessages = useCallback(async () => {
+    if (user?.role !== 'admin') return;
+    try {
+      const res = await fetch("/api/messages");
+      if (res.ok) setMessagesRaw(await res.json());
+    } catch (e) { console.error(e); }
+  }, [user]);
+
+  // Fetch messages initially and poll
+  useEffect(() => {
+    fetchAdminMessages();
+    const intv = setInterval(fetchAdminMessages, 10000);
+    return () => clearInterval(intv);
+  }, [fetchAdminMessages]);
 
   const { mutate: updateStatus } = useUpdateOrderStatus({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/orders"] }) }
+    mutation: {
+      onSuccess: async (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        // Auto delete chats inside API if marked as delivered
+        if (variables.data.status === 'delivered') {
+          const matchedOrder = orders?.find(o => o.id === variables.id);
+          if (matchedOrder) {
+             try {
+               await fetch(`/api/messages/${matchedOrder.phone}/${matchedOrder.productId}`, { method: 'DELETE' });
+               fetchAdminMessages();
+             } catch(e) {}
+          }
+        }
+      }
+    }
   });
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct({
     mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/products"] }); setProductModal(null); } }
@@ -272,7 +469,7 @@ export function Admin() {
     o.governorate?.includes(orderSearch)
   ) || [];
 
-  const editProduct = products?.find(p => typeof productModal === 'object' && p.id === productModal.id);
+  const editProduct = products?.find((p: any) => typeof productModal === 'object' && productModal !== null && productModal.id != null && p.id === productModal.id);
 
   const statCards = [
     { title: "إجمالي الطلبات", value: orders?.length || 0, icon: ShoppingBag, color: "text-blue-400", bg: "bg-blue-500/10" },
@@ -285,7 +482,17 @@ export function Admin() {
     { id: 'orders', label: `الطلبات (${orders?.length || 0})` },
     { id: 'products', label: `المنتجات (${products?.length || 0})` },
     { id: 'categories', label: `الأقسام (${categories?.length || 0})` },
+    { id: 'chats', label: `المحادثات (${new Set(messagesRaw.map(m => m.user_phone + m.product_id)).size})` },
   ] as const;
+
+  // Group messages for Chat tab
+  const groupedChats = messagesRaw.reduce((acc, msg) => {
+    const key = `${msg.user_phone}_${msg.product_id}`;
+    if (!acc[key]) acc[key] = { phone: msg.user_phone, productId: msg.product_id, messages: [] };
+    acc[key].messages.push(msg);
+    return acc;
+  }, {} as Record<string, any>);
+  const chatList = Object.values(groupedChats);
 
   return (
     <div className="min-h-screen pt-24 pb-16 bg-background">
@@ -389,7 +596,7 @@ export function Admin() {
               <div className="py-20 text-center text-muted-foreground">جاري التحميل...</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {products?.map(p => (
+                {products?.map((p: any) => (
                   <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden group hover:border-primary/50 transition-colors">
                     <div className="relative h-40 bg-black/30">
                       <img src={p.images?.[0]} alt={p.nameAr} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
@@ -431,7 +638,7 @@ export function Admin() {
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {categories?.map(c => (
+              {categories?.map((c: any) => (
                 <div key={c.id} className="bg-card border border-border rounded-2xl p-5 text-center hover:border-primary/50 transition-colors">
                   <div className="text-4xl mb-3">{c.icon || "📦"}</div>
                   <h3 className="font-bold">{c.nameAr}</h3>
@@ -439,6 +646,125 @@ export function Admin() {
                   <span className="inline-block mt-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{c.productCount || 0} منتج</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        {/* ── CHATS TAB ── */}
+        {activeTab === 'chats' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px]">
+            {/* Sidebar List */}
+            <div className="md:col-span-1 bg-card border border-border rounded-2xl overflow-hidden flex flex-col h-full">
+              <div className="p-4 border-b border-border font-bold">المحادثات النشطة</div>
+              <div className="flex-1 overflow-y-auto">
+                {chatList.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground text-sm">لا توجد محادثات</div>
+                ) : (
+                  chatList.map((chat: any) => {
+                    const prodName = products?.find((p: any) => p.id === chat.productId)?.nameAr || `منتج #${chat.productId}`;
+                    const isActive = activeChat?.phone === chat.phone && activeChat?.productId === chat.productId;
+                    const lastMsg = chat.messages[chat.messages.length - 1];
+                    
+                    return (
+                      <div key={`${chat.phone}_${chat.productId}`}
+                        className={`relative border-b border-border/50 ${isActive ? 'bg-primary/10 border-l-4 border-l-primary' : ''}`}
+                      >
+                        <button
+                          onClick={() => setActiveChat({ phone: chat.phone, productId: chat.productId })}
+                          className="w-full text-right p-4 hover:bg-white/5 transition-colors block pr-12"
+                        >
+                          <div className="font-bold text-sm mb-1">{prodName}</div>
+                          <div className="text-xs text-muted-foreground font-mono" dir="ltr">{chat.phone}</div>
+                          <div className="mt-2 text-xs text-muted-foreground truncate">{lastMsg?.content}</div>
+                        </button>
+                        {/* Delete button */}
+                        <button
+                          title="حذف المحادثة"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm(`حذف محادثة ${chat.phone}?`)) return;
+                            await fetch(`/api/messages/${chat.phone}/${chat.productId}`, { method: 'DELETE' });
+                            if (activeChat?.phone === chat.phone && activeChat?.productId === chat.productId) {
+                              setActiveChat(null);
+                            }
+                            fetchAdminMessages();
+                          }}
+                          className="absolute top-3 left-3 p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Chat View */}
+            <div className="md:col-span-2 bg-card border border-border rounded-2xl flex flex-col h-full overflow-hidden">
+              {activeChat ? (() => {
+                const chatData = groupedChats[`${activeChat.phone}_${activeChat.productId}`] || { messages: [] };
+                const prodName = products?.find((p: any) => p.id === activeChat.productId)?.nameAr || `منتج #${activeChat.productId}`;
+                return (
+                  <>
+                    <div className="p-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/20 text-primary rounded-full flex items-center justify-center">
+                        <MessageCircle className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm">{prodName}</div>
+                        <div className="text-xs text-muted-foreground font-mono" dir="ltr">{activeChat.phone}</div>
+                      </div>
+                      {/* Delete entire conversation */}
+                      <button
+                        title="حذف المحادثة نهائياً"
+                        onClick={async () => {
+                          if (!confirm(`حذف كل محادثة ${activeChat.phone}?`)) return;
+                          await fetch(`/api/messages/${activeChat.phone}/${activeChat.productId}`, { method: 'DELETE' });
+                          setActiveChat(null);
+                          fetchAdminMessages();
+                        }}
+                        className="p-2 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors flex items-center gap-1.5 text-xs font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" /> حذف
+                      </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background/30">
+                      {chatData.messages.map((msg: any) => (
+                        <div key={msg.id} className={`max-w-[70%] rounded-2xl p-3 text-sm ${msg.sender === "admin" ? "bg-primary text-primary-foreground self-start rounded-tr-sm" : "bg-muted text-foreground self-end rounded-tl-sm mx-auto mr-0 md:mr-auto md:ml-0"}`}>
+                          <p>{msg.content}</p>
+                          <span className="text-[10px] opacity-50 mt-1 block">{new Date(msg.created_at).toLocaleTimeString('ar-EG')}</span>
+                        </div>
+                      ))}
+                      {!chatData.messages.length && <div className="text-center text-muted-foreground mt-10">لا توجد رسائل</div>}
+                    </div>
+                    
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!adminReply.trim()) return;
+                        try {
+                          await fetch("/api/messages", {
+                            method: "POST", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userPhone: activeChat.phone, productId: activeChat.productId, sender: "admin", content: adminReply })
+                          });
+                          setAdminReply("");
+                          fetchAdminMessages();
+                        } catch(err) {} 
+                      }}
+                      className="p-3 border-t border-border bg-card flex gap-2"
+                    >
+                      <Input value={adminReply} onChange={e => setAdminReply(e.target.value)} placeholder="اكتب ردك هنا..." className="flex-1 bg-background" />
+                      <Button type="submit" disabled={!adminReply.trim()}><Send className="w-4 h-4 rtl:-scale-x-100" /></Button>
+                    </form>
+                  </>
+                );
+              })() : (
+                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+                  <MessageCircle className="w-16 h-16 opacity-20 mb-4" />
+                  <p>اختر محادثة للبدء في الرد</p>
+                </div>
+              )}
             </div>
           </div>
         )}

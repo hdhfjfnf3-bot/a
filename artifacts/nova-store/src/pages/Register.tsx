@@ -3,6 +3,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRegister } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
@@ -19,6 +21,7 @@ type RegisterValues = z.infer<typeof registerSchema>;
 export function Register() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const [showPassword, setShowPassword] = useState(false);
   
   const { mutate: registerUser, isPending, error } = useRegister({
     mutation: {
@@ -58,7 +61,14 @@ export function Register() {
         </div>
 
         <form onSubmit={handleSubmit((d) => registerUser({ data: d }))} className="space-y-5">
-          {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20">{error.error}</div>}
+          {error && (
+            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20">
+              {(error as any)?.response?.data?.message ||
+               (error as any)?.message ||
+               (error as any)?.error ||
+               "رقم الهاتف أو كلمة المرور غير صحيحة"}
+            </div>
+          )}
           
           <div className="space-y-2">
             <label className="text-sm font-medium">الاسم بالكامل</label>
@@ -72,9 +82,29 @@ export function Register() {
             {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <label className="text-sm font-medium">كلمة المرور</label>
-            <Input type="password" {...register("password")} dir="ltr" error={!!errors.password} className="text-left" />
+            <div className="relative">
+              <Input 
+                type={showPassword ? "text" : "password"} 
+                {...register("password")} 
+                dir="ltr" 
+                error={!!errors.password} 
+                className="text-left pr-10" 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 hover:text-amber-400 focus:outline-none transition-colors"
+                title={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                ) : (
+                  <Eye className="w-5 h-5 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                )}
+              </button>
+            </div>
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
 

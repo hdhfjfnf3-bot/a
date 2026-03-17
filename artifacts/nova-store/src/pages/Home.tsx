@@ -1,338 +1,416 @@
+import React from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowLeft, ShieldCheck, Truck, Clock } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Truck, Clock, Star, Zap, Crown, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useGetProducts } from "@workspace/api-client-react";
-import { useEffect, useRef } from "react";
+import { useReveal } from "@/components/RevealSystem";
+import { useRef, useState, useCallback } from "react";
 
-function LuxuryCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+/* ─── خلفية فيديو متتالية ─── */
+const BG_VIDEOS = ["video_bg1.mp4", "video_bg2.mp4"];
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+function VideoBackground() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [idx, setIdx] = useState(0);
 
-    let animId: number;
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
+  const onEnded = useCallback(() => {
+    setIdx(prev => (prev + 1) % BG_VIDEOS.length);
+  }, []);
 
-    const resize = () => {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    };
-    window.addEventListener("resize", resize);
-
-    // Particles
-    const PARTICLE_COUNT = 120;
-    type Particle = {
-      x: number; y: number; vx: number; vy: number;
-      size: number; opacity: number; hue: number; life: number; maxLife: number;
-    };
-    const particles: Particle[] = Array.from({ length: PARTICLE_COUNT }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: -Math.random() * 0.6 - 0.2,
-      size: Math.random() * 3 + 0.5,
-      opacity: Math.random(),
-      hue: 40 + Math.random() * 20,
-      life: Math.random() * 300,
-      maxLife: 200 + Math.random() * 200,
-    }));
-
-    // Light beams
-    const BEAMS = 5;
-    type Beam = { x: number; angle: number; width: number; speed: number; opacity: number; };
-    const beams: Beam[] = Array.from({ length: BEAMS }, (_, i) => ({
-      x: (w / (BEAMS + 1)) * (i + 1),
-      angle: -0.3 + Math.random() * 0.6,
-      width: 60 + Math.random() * 100,
-      speed: 0.0003 + Math.random() * 0.0003,
-      opacity: 0.03 + Math.random() * 0.04,
-    }));
-
-    let t = 0;
-
-    const draw = () => {
-      t++;
-      ctx.clearRect(0, 0, w, h);
-
-      // Deep dark background
-      const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.8);
-      bgGrad.addColorStop(0, "#0d0a06");
-      bgGrad.addColorStop(0.5, "#080603");
-      bgGrad.addColorStop(1, "#030200");
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, w, h);
-
-      // Ambient gold glow center
-      const centerGlow = ctx.createRadialGradient(w / 2, h * 0.45, 0, w / 2, h * 0.45, w * 0.4);
-      centerGlow.addColorStop(0, "rgba(212,175,55,0.07)");
-      centerGlow.addColorStop(0.5, "rgba(180,140,20,0.03)");
-      centerGlow.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = centerGlow;
-      ctx.fillRect(0, 0, w, h);
-
-      // Light beams
-      beams.forEach((beam) => {
-        const pulse = 0.6 + 0.4 * Math.sin(t * beam.speed * 200);
-        ctx.save();
-        ctx.translate(beam.x + Math.sin(t * beam.speed * 40) * 80, 0);
-        ctx.rotate(beam.angle + Math.sin(t * beam.speed * 20) * 0.05);
-        const beamGrad = ctx.createLinearGradient(0, 0, 0, h);
-        beamGrad.addColorStop(0, `rgba(212,175,55,0)`);
-        beamGrad.addColorStop(0.2, `rgba(212,175,55,${beam.opacity * pulse})`);
-        beamGrad.addColorStop(0.7, `rgba(212,175,55,${beam.opacity * pulse * 0.5})`);
-        beamGrad.addColorStop(1, `rgba(212,175,55,0)`);
-        ctx.fillStyle = beamGrad;
-        ctx.fillRect(-beam.width / 2, 0, beam.width, h);
-        ctx.restore();
-      });
-
-      // Particles
-      particles.forEach((p) => {
-        p.life++;
-        if (p.life > p.maxLife) {
-          p.x = Math.random() * w;
-          p.y = h + 10;
-          p.vx = (Math.random() - 0.5) * 0.4;
-          p.vy = -Math.random() * 0.6 - 0.2;
-          p.life = 0;
-          p.maxLife = 200 + Math.random() * 200;
-          p.size = Math.random() * 3 + 0.5;
-          p.hue = 40 + Math.random() * 20;
-        }
-        p.x += p.vx + Math.sin(t * 0.005 + p.y * 0.01) * 0.15;
-        p.y += p.vy;
-        const lifeRatio = p.life / p.maxLife;
-        const alpha = lifeRatio < 0.2
-          ? lifeRatio * 5
-          : lifeRatio > 0.8
-          ? (1 - lifeRatio) * 5
-          : 1;
-
-        // Glow
-        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
-        grd.addColorStop(0, `hsla(${p.hue},80%,65%,${alpha * 0.8})`);
-        grd.addColorStop(1, `hsla(${p.hue},80%,55%,0)`);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
-        ctx.fillStyle = grd;
-        ctx.fill();
-
-        // Core
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue},90%,80%,${alpha})`;
-        ctx.fill();
-      });
-
-      // Horizontal shimmer lines
-      for (let i = 0; i < 3; i++) {
-        const lineY = ((h * (i + 1)) / 4 + Math.sin(t * 0.002 + i) * 30) % h;
-        const lineAlpha = 0.03 + 0.02 * Math.sin(t * 0.01 + i * 2);
-        const lineGrad = ctx.createLinearGradient(0, lineY, w, lineY);
-        lineGrad.addColorStop(0, "rgba(212,175,55,0)");
-        lineGrad.addColorStop(0.3, `rgba(212,175,55,${lineAlpha})`);
-        lineGrad.addColorStop(0.7, `rgba(212,175,55,${lineAlpha})`);
-        lineGrad.addColorStop(1, "rgba(212,175,55,0)");
-        ctx.strokeStyle = lineGrad;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, lineY);
-        ctx.lineTo(w, lineY);
-        ctx.stroke();
-      }
-
-      animId = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
-    };
+  // عند تغيير الفيديو نحمل ونشغل\n
+  const onLoadedData = useCallback(() => {
+    videoRef.current?.play().catch(() => {});
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ zIndex: 0 }}
-    />
+    <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+      <video
+        ref={videoRef}
+        key={idx}
+        src={`${import.meta.env.BASE_URL}${BG_VIDEOS[idx]}`}
+        autoPlay
+        muted
+        playsInline
+        onEnded={onEnded}
+        onLoadedData={onLoadedData}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      {/* تعتيم فاخر */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(4,2,8,0.3) 0%, rgba(4,2,8,0.1) 45%, rgba(4,2,8,0.7) 100%)",
+        }}
+      />
+      {/* توهج ذهبي */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 40% at 50% 0%, rgba(212,175,55,0.07) 0%, transparent 65%)",
+        }}
+      />
+    </div>
   );
 }
 
+/* ─── بطاقة ميزة ─── */
+function FeatureCard({ icon: Icon, title, desc, delay }: { icon: any; title: string; desc: string; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.6 }}
+      whileHover={{ y: -6, scale: 1.02 }}
+      className="relative group flex flex-col items-center text-center px-8 py-10 rounded-3xl border border-white/5 bg-white/3 backdrop-blur-sm overflow-hidden cursor-default"
+    >
+      {/* Glow on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-b from-primary/5 to-transparent" />
+      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center mb-6 text-primary relative z-10 group-hover:scale-110 transition-transform duration-300">
+        <Icon className="w-9 h-9" />
+      </div>
+      <h3 className="text-xl font-bold text-white mb-3 relative z-10">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed relative z-10">{desc}</p>
+    </motion.div>
+  );
+}
+
+/* ─── شريط الإحصائيات ─── */
+function StatsBadge({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-2xl md:text-3xl font-extrabold text-gradient-gold font-luxury">{value}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+/* ─── الصفحة الرئيسية ─── */
 export function Home() {
   const { scrollYProgress } = useScroll();
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, 200]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, 180]);
+  const opacity = useTransform(scrollYProgress, [0, 0.18], [1, 0]);
+  const { revealed } = useReveal();
   const { data: products, isLoading } = useGetProducts({ featured: true });
 
   const features = [
-    { icon: Truck, title: "شحن سريع", desc: "توصيل لجميع المحافظات في أسرع وقت" },
-    { icon: ShieldCheck, title: "ضمان الجودة", desc: "منتجات أصلية ومضمونة 100%" },
-    { icon: Clock, title: "دعم على مدار الساعة", desc: "فريق خدمة عملاء جاهز لمساعدتك" },
+    { icon: Truck,      title: "شحن سريع لكل مصر",    desc: "توصيل لجميع المحافظات في أسرع وقت ممكن" },
+    { icon: ShieldCheck,title: "ضمان الجودة 100%",     desc: "منتجات أصلية ومضمونة أو استرداد كامل" },
+    { icon: Clock,      title: "دعم 24/7",              desc: "فريق خدمة عملاء جاهز لمساعدتك في أي وقت" },
+    { icon: Crown,      title: "منتجات حصرية فاخرة",   desc: "مختارة بعناية فائقة لتناسب ذوقك الرفيع" },
   ];
 
   return (
-    <div className="min-h-screen">
-      {/* HERO SECTION */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Animated Canvas Background */}
-        <LuxuryCanvas />
+    <div className="min-h-screen bg-[#050302]">
 
-        {/* Overlay gradient to blend into page */}
+      {/* ══════════════ HERO ══════════════ */}
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        <VideoBackground />
+
+        {/* Gradient overlays */}
         <div className="absolute inset-0 z-[1] pointer-events-none">
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
-          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-56 bg-gradient-to-t from-[#050302] via-[#050302]/60 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#050302]/70 to-transparent" />
         </div>
 
-        <motion.div 
-          style={{ y: y1, opacity }}
-          className="container relative z-[10] mx-auto px-4 text-center mt-20"
-        >
+
+        <motion.div style={{ y: y1, opacity }} className="container relative z-[10] mx-auto px-4 text-center">
+
+          {/* Crown icon */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={revealed ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+            className="flex justify-center mb-6"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 flex items-center justify-center shadow-[0_0_40px_rgba(212,175,55,0.3)]">
+              <Crown className="w-8 h-8 text-primary" />
+            </div>
+          </motion.div>
+
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={revealed ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-5 py-2 mb-8"
+          >
+            <Star className="w-4 h-4 text-primary fill-primary" />
+            <span className="text-primary text-sm font-medium">متجر نوفا — التسوق الفاخر</span>
+            <Star className="w-4 h-4 text-primary fill-primary" />
+          </motion.div>
+
+          {/* Logo */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={revealed ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.9, delay: 0.15, ease: [0.34, 1.56, 0.64, 1] }}
             className="mb-8 flex justify-center"
           >
-            <img 
-              src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`} 
-              alt="NOVA" 
-              className="w-56 md:w-80 object-contain rounded-2xl drop-shadow-[0_0_40px_rgba(212,175,55,0.6)]"
+            <img
+              src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`}
+              alt="NOVA"
+              className="w-44 md:w-64 object-contain drop-shadow-[0_0_60px_rgba(212,175,55,0.7)]"
             />
           </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 leading-tight"
+
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 50 }}
+            animate={revealed ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.9, delay: 0.28 }}
+            className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-5 leading-[1.15]"
           >
-            اكتشف <span className="text-gradient-gold font-luxury">الرفاهية</span> في كل تفصيلة
+            اكتشف{" "}
+            <span className="text-gradient-gold font-luxury relative">
+              الرفاهية
+              <span className="absolute -bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
+            </span>{" "}
+            في كل تفصيلة
           </motion.h1>
-          
-          <motion.p 
+
+          {/* Sub */}
+          <motion.p
             initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="text-lg md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto"
+            animate={revealed ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.42 }}
+            className="text-lg md:text-xl text-white/60 mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            تسوق أحدث المنتجات الحصرية المختارة بعناية لتناسب ذوقك الرفيع.
+            تسوق أحدث المنتجات الحصرية المختارة بعناية — جودة استثنائية بأسعار لا تُقاوَم
           </motion.p>
-          
+
+          {/* CTA Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
+            animate={revealed ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.56 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link href="/products">
-              <Button size="lg" className="rounded-full text-lg px-12 group">
+              <Button size="lg" className="rounded-full text-base md:text-lg px-10 h-14 shadow-[0_0_40px_rgba(212,175,55,0.4)] hover:shadow-[0_0_60px_rgba(212,175,55,0.6)] transition-all duration-300 group">
                 تسوق التشكيلة الآن
-                <ArrowLeft className="ml-2 w-5 h-5 group-hover:-translate-x-2 transition-transform" />
+                <ArrowLeft className="mr-2 w-5 h-5 group-hover:-translate-x-2 transition-transform" />
               </Button>
             </Link>
+            <Link href="/products">
+              <Button size="lg" variant="outline" className="rounded-full text-base md:text-lg px-10 h-14 border-white/15 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300">
+                اكتشف المزيد
+              </Button>
+            </Link>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={revealed ? { opacity: 1 } : {}}
+            transition={{ duration: 1, delay: 0.8 }}
+            className="mt-16 flex items-center justify-center gap-10 md:gap-16 border-t border-white/5 pt-10"
+          >
+            <StatsBadge value="+500" label="عميل سعيد" />
+            <div className="h-8 w-px bg-white/10" />
+            <StatsBadge value="+50" label="منتج مميز" />
+            <div className="h-8 w-px bg-white/10" />
+            <StatsBadge value="100%" label="ضمان الجودة" />
+          </motion.div>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 1 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-white/30"
+        >
+          <span className="text-xs tracking-widest uppercase">اسحب للأسفل</span>
+          <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 1.6 }}>
+            <ChevronDown className="w-5 h-5" />
           </motion.div>
         </motion.div>
       </section>
 
-      {/* FEATURES STRIP */}
-      <section className="border-y border-white/5 bg-white/5 backdrop-blur-md relative z-20">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-white/10">
-            {features.map((feature, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                className="flex flex-col items-center text-center px-6 py-4"
-              >
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
-                  <feature.icon className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.desc}</p>
-              </motion.div>
+      {/* ══════════════ FEATURES ══════════════ */}
+      <section className="py-24 relative z-20">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
+              <Zap className="w-4 h-4 text-primary" />
+              <span className="text-primary text-sm">لماذا نوفا؟</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-white">
+              تجربة تسوق{" "}
+              <span className="text-gradient-gold font-luxury">لا مثيل لها</span>
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {features.map((f, i) => (
+              <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} delay={i * 0.12} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* FEATURED PRODUCTS */}
+      {/* ══════════════ DIVIDER ══════════════ */}
+      <div className="relative z-20 my-4">
+        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-px bg-primary/60 blur-sm" />
+      </div>
+
+      {/* ══════════════ FEATURED PRODUCTS ══════════════ */}
       <section className="py-24 relative z-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+
           <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-3xl md:text-5xl font-bold mb-4">
-                <span className="text-gradient-gold">تشكيلة</span> مميزة
+            <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
+                <Star className="w-4 h-4 text-primary fill-primary" />
+                <span className="text-primary text-sm">الأكثر مبيعاً</span>
+              </div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white">
+                <span className="text-gradient-gold font-luxury">تشكيلتنا</span> المميزة
               </h2>
-              <p className="text-muted-foreground text-lg max-w-lg">
-                اكتشف أكثر المنتجات مبيعاً والمفضلة لدى عملائنا
+              <p className="text-muted-foreground mt-3 text-lg max-w-md">
+                اكتشف المنتجات المفضلة لدى آلاف العملاء
               </p>
             </motion.div>
-            
-            <Link href="/products">
-              <Button variant="outline" className="gap-2 rounded-full">
-                عرض الكل <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
+
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.3 }}>
+              <Link href="/products">
+                <Button variant="outline" className="gap-2 rounded-full border-white/15 hover:border-primary/50 hover:bg-primary/5 px-6 h-12">
+                  عرض كل المنتجات <ArrowLeft className="w-4 h-4" />
+                </Button>
+              </Link>
+            </motion.div>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex flex-col items-center justify-center py-32 gap-6">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+                <Crown className="absolute inset-0 m-auto w-8 h-8 text-primary" />
+              </div>
+              <p className="text-muted-foreground text-sm">جاري تحميل أفضل المنتجات...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {products?.slice(0, 8).map((product, i) => (
-                <ProductCard key={product.id} product={product} index={i} />
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+              {(Array.isArray(products) ? products : (products as any)?.data || [])
+                .slice(0, 8)
+                .map((product: any, i: number) => (
+                  <ProductCard key={product.id} product={product} index={i} />
+                ))}
             </div>
           )}
         </div>
       </section>
-      
-      {/* PROMO BANNER */}
-      <section className="py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-gold opacity-10" />
+
+      {/* ══════════════ PROMO BANNER ══════════════ */}
+      <section className="py-20 relative z-20 overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        </div>
+
         <div className="container mx-auto px-4 relative z-10">
-          <div className="glass-panel-gold rounded-3xl p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-10">
-            <div className="flex-1 text-center md:text-right">
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
-                ارتقِ بأسلوب حياتك مع مجموعتنا الحصرية
-              </h2>
-              <p className="text-xl text-white/80 mb-8 max-w-xl">
-                خصم يصل إلى 30% على منتجات مختارة لفترة محدودة. تسوق الآن قبل نفاذ الكمية.
-              </p>
-              <Link href="/products">
-                <Button size="lg" className="rounded-full bg-white text-black hover:bg-white/90 shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                  استفد من العرض
-                </Button>
-              </Link>
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative rounded-[2rem] overflow-hidden border border-primary/20 bg-gradient-to-br from-[#1a1100] via-[#120d04] to-[#0a0702] p-10 md:p-16 shadow-[0_0_80px_rgba(212,175,55,0.1)]"
+          >
+            {/* Top shimmer line */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
+            {/* Decorative corner gems */}
+            <div className="absolute top-6 right-6 w-12 h-12 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-center">
+              <Crown className="w-5 h-5 text-primary" />
             </div>
-            <div className="flex-1 w-full flex justify-center">
-              {/* elegant watch or perfume generic unsplash image */}
-              <img 
-                src="https://pixabay.com/get/gb641aca89a2c04d8124341f9e63616eedce80aff9e3dd74503e9858c6d691080fa9a89cd049def147cce44fb2e1f517054f441681f1b68f104510d04f18a6143_1280.jpg" 
-                alt="Promo" 
-                className="w-full max-w-md rounded-2xl shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500 border border-white/20"
-              />
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+              <div className="flex-1 text-center md:text-right">
+                <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/25 rounded-full px-4 py-1.5 mb-6">
+                  <Zap className="w-4 h-4 text-primary" />
+                  <span className="text-primary text-sm font-medium">عرض محدود الوقت</span>
+                </div>
+                <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-5 leading-tight">
+                  ارتقِ بأسلوب حياتك{" "}
+                  <span className="text-gradient-gold font-luxury block">مع مجموعتنا الحصرية</span>
+                </h2>
+                <p className="text-white/60 text-lg mb-8 max-w-lg">
+                  خصم يصل إلى <span className="text-primary font-bold">30%</span> على منتجات مختارة لفترة محدودة. تسوق الآن قبل نفاذ الكمية.
+                </p>
+                <Link href="/products">
+                  <Button
+                    size="lg"
+                    className="rounded-full px-12 h-14 text-lg bg-gradient-to-r from-primary to-amber-500 text-black font-bold hover:shadow-[0_0_50px_rgba(212,175,55,0.5)] transition-all duration-300 group"
+                  >
+                    استفد من العرض الآن
+                    <ArrowLeft className="mr-2 w-5 h-5 group-hover:-translate-x-2 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Stats column */}
+              <div className="flex-shrink-0 flex flex-col gap-5">
+                {[
+                  { value: "30%", label: "أقصى خصم" },
+                  { value: "24h", label: "توصيل سريع" },
+                  { value: "100%", label: "رضا مضمون" },
+                ].map((s, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.15 }}
+                    className="flex items-center gap-4 bg-white/5 border border-white/8 rounded-2xl px-6 py-4"
+                  >
+                    <span className="text-2xl font-extrabold text-gradient-gold font-luxury">{s.value}</span>
+                    <span className="text-white/60 text-sm">{s.label}</span>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
+
+      {/* ══════════════ FOOTER STRIP ══════════════ */}
+      <div className="relative z-20 py-8 border-t border-white/5">
+        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-white/30 text-sm">
+          <span>© 2026 NOVA Store — أحمد محرم. جميع الحقوق محفوظة.</span>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://wa.me/201005209667"
+              target="_blank" rel="noreferrer"
+              className="hover:text-green-400 transition-colors flex items-center gap-1"
+            >
+              <span>📱</span> واتساب
+            </a>
+            <span className="text-white/10">|</span>
+            <a
+              href="https://www.facebook.com"
+              target="_blank" rel="noreferrer"
+              className="hover:text-blue-400 transition-colors"
+            >
+              📘 فيسبوك
+            </a>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

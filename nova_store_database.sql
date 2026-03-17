@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Y8fAFd0YxH7HIMiJlcUk5nDOc9UKzeYpzLg0eLdLho0cjmdFHlRehlk6cgQAzgH
+
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -353,6 +353,4 @@ ALTER TABLE ONLY public.products
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict Y8fAFd0YxH7HIMiJlcUk5nDOc9UKzeYpzLg0eLdLho0cjmdFHlRehlk6cgQAzgH
 

@@ -74,15 +74,15 @@ export function Products() {
           <div className="flex justify-center py-32">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
-        ) : products?.length === 0 ? (
+        ) : (Array.isArray(products) ? products : (products as any)?.data || [])?.length === 0 ? (
           <div className="text-center py-32 bg-card rounded-3xl border border-white/5">
             <Filter className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-50" />
             <h3 className="text-2xl font-bold mb-2">لا توجد منتجات</h3>
             <p className="text-muted-foreground">حاول تغيير كلمات البحث أو القسم المختار</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {products?.map((product, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-8">
+            {(Array.isArray(products) ? products : (products as any)?.data || []).map((product: any, i: number) => (
               <ProductCard key={product.id} product={product} index={i} />
             ))}
           </div>

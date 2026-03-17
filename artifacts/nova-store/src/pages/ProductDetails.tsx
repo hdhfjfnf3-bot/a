@@ -1,16 +1,182 @@
-import { useParams, Link } from "wouter";
-import { useGetProduct } from "@workspace/api-client-react";
+import { useParams, Link, useLocation } from "wouter";
+import { useGetProduct, useGetMe } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { formatPrice } from "@/lib/utils";
-import { ShoppingCart, ShieldCheck, Truck, ArrowRight } from "lucide-react";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { getProductStats, Review } from "@/lib/reviews";
+import { ShoppingCart, ShieldCheck, Truck, ArrowRight, Star, CheckCircle, TrendingUp, ThumbsUp, Send, MessageCircle, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// --- Product Chat Component ---
+function ProductChat({ productId, userPhone }: { productId: number, userPhone: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(`/api/messages/${userPhone}/${productId}`);
+      if (res.ok) {
+        setMessages(await res.json());
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 5000);
+      return () => clearInterval(interval);
+    }
+    return undefined;
+  }, [isOpen, productId, userPhone]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    const msgText = newMessage;
+    setNewMessage("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userPhone,
+          productId,
+          sender: "user",
+          content: msgText
+        })
+      });
+      if (res.ok) {
+        await fetchMessages();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 left-6 z-50 bg-primary text-primary-foreground p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group"
+      >
+        <MessageCircle className="w-6 h-6" />
+        <span className="sr-only md:not-sr-only overflow-hidden max-w-0 md:max-w-xs transition-all duration-300 md:group-hover:ml-2 font-medium opacity-0 md:opacity-100 hidden md:block">
+          تواصل معنا
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-24 left-6 z-50 w-80 sm:w-96 bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[500px] h-[80vh]"
+          >
+            {/* Header */}
+            <div className="bg-primary/10 border-b border-border p-4 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold flex items-center gap-2 text-primary">
+                  <MessageCircle className="w-5 h-5" /> دعم المنتج
+                </h3>
+                <p className="text-xs text-muted-foreground">فريق خدمة العملاء متاح للرد على أي استفسار</p>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col bg-background/50">
+              <div className="text-center text-xs text-muted-foreground my-2">
+                تبدأ المحادثة حول هذا المنتج فقط
+              </div>
+              {messages.map((msg) => (
+                <div key={msg.id} className={`max-w-[80%] rounded-2xl p-3 text-sm ${msg.sender === "user" ? "bg-primary text-primary-foreground self-start rounded-tr-sm" : "bg-muted text-foreground self-end rounded-tl-sm"}`}>
+                  <p>{msg.content}</p>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleSend} className="p-3 bg-card border-t border-border flex items-center gap-2">
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="اكتب استفسارك..."
+                className="flex-1 h-10 bg-background"
+                disabled={isLoading}
+              />
+              <Button type="submit" size="icon" disabled={!newMessage.trim() || isLoading} className="h-10 w-10 shrink-0">
+                <Send className="w-4 h-4 rtl:-scale-x-100" />
+              </Button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
 
 export function ProductDetails() {
   const params = useParams();
+  const [, setLocation] = useLocation();
   const id = parseInt(params.id || "0");
   const { data: product, isLoading, error } = useGetProduct(id);
+  const { data: user } = useGetMe({ query: { retry: false, queryKey: ['/api/auth/me'] } });
   const [activeImage, setActiveImage] = useState(0);
+  const [realReviews, setRealReviews] = useState<Review[]>([]);
+  const [newReview, setNewReview] = useState({ name: "", text: "", rating: 5 });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [hasActiveOrder, setHasActiveOrder] = useState(false);
+
+  // Check if user has an active (non-delivered) order for this product
+  useEffect(() => {
+    if (!user?.phone || !id) return;
+    const checkOrder = async () => {
+      try {
+        const res = await fetch(`/api/orders?phone=${user.phone}`);
+        if (res.ok) {
+          const data = await res.json();
+          const orders = Array.isArray(data) ? data : (data?.data ?? []);
+          const active = orders.some(
+            (o: any) => o.productId === id && o.phone === user.phone && o.status !== 'delivered'
+          );
+          setHasActiveOrder(active);
+        }
+      } catch (e) { /* ignore */ }
+    };
+    checkOrder();
+  }, [user, id]);
+
+  useEffect(() => {
+    if (id) {
+      const savedReviews = localStorage.getItem(`reviews_${id}`);
+      if (savedReviews) {
+        try {
+          setRealReviews(JSON.parse(savedReviews));
+        } catch (e) {
+          console.error("Failed to parse saved reviews");
+        }
+      }
+    }
+  }, [id]);
 
   if (isLoading) {
     return (
@@ -33,6 +199,44 @@ export function ProductDetails() {
   }
 
   const isSoldOut = product.stock <= 0;
+  
+  // Combine stats
+  const baseStats = getProductStats(product.id);
+  const allReviews = [...realReviews, ...baseStats.reviews];
+  const totalReviewsCount = allReviews.length;
+  // Calculate new average rating
+  const totalRatingSum = allReviews.reduce((sum, rev) => sum + rev.rating, 0);
+  const averageRating = totalReviewsCount > 0 ? (totalRatingSum / totalReviewsCount) : baseStats.rating;
+
+  const discountPct = product.originalPrice && product.originalPrice > product.price
+    ? Math.round((1 - product.price / product.originalPrice) * 100)
+    : null;
+
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReview.name.trim() || !newReview.text.trim()) return;
+
+    setIsSubmittingReview(true);
+    
+    // Simulate slight network delay for better UX
+    setTimeout(() => {
+      const review: Review = {
+        id: `real-${Date.now()}`,
+        name: newReview.name,
+        text: newReview.text,
+        rating: newReview.rating,
+        date: new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }),
+        verified: true // Real users on the site count as verified
+      };
+
+      const updatedReviews = [review, ...realReviews];
+      setRealReviews(updatedReviews);
+      localStorage.setItem(`reviews_${id}`, JSON.stringify(updatedReviews));
+      
+      setNewReview({ name: "", text: "", rating: 5 });
+      setIsSubmittingReview(false);
+    }, 600);
+  };
 
   return (
     <div className="min-h-screen pt-32 pb-24">
@@ -88,12 +292,37 @@ export function ProductDetails() {
                   {product.badge}
                 </span>
               )}
+              {discountPct && (
+                <span className="inline-block bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-sm font-bold mb-4 mr-2 border border-red-500/30">
+                  خصم {discountPct}%
+                </span>
+              )}
               <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
                 {product.nameAr || product.name}
               </h1>
               <p className="text-primary font-medium text-lg">
                 {product.categoryNameAr || product.categoryName || 'متنوع'}
               </p>
+            </div>
+
+            {/* التقييم والمبيعات */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-1">
+                {[1,2,3,4,5].map(i => {
+                  const full = i <= Math.floor(averageRating);
+                  const half = !full && i === Math.ceil(averageRating) && averageRating % 1 !== 0;
+                  return (
+                    <Star key={i} className={`w-5 h-5 ${full ? 'text-amber-400 fill-amber-400' : half ? 'text-amber-400 fill-amber-400/50' : 'text-gray-600'}`} />
+                  );
+                })}
+                <span className="font-bold text-amber-400 mr-1">{averageRating.toFixed(1)}</span>
+                <span className="text-muted-foreground text-sm">({totalReviewsCount} تقييم)</span>
+              </div>
+              <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                <TrendingUp className="w-4 h-4 text-green-400" />
+                <span className="text-green-400 font-semibold">{baseStats.salesCount}+</span>
+                <span>مبيعة</span>
+              </div>
             </div>
 
             <div className="flex items-end gap-4 mb-8 pb-8 border-b border-white/10">
@@ -130,17 +359,150 @@ export function ProductDetails() {
                   نفذت الكمية
                 </Button>
               ) : (
-                <Link href={`/order/${product.id}`}>
-                  <Button size="lg" className="w-full lg:w-auto min-w-[250px] text-lg shadow-xl shadow-primary/30 hover:-translate-y-1">
-                    <ShoppingCart className="w-5 h-5 ml-2" />
-                    اشتري الآن
-                  </Button>
-                </Link>
+                <Button 
+                  size="lg" 
+                  className="w-full lg:w-auto min-w-[250px] text-lg shadow-xl shadow-primary/30 hover:-translate-y-1"
+                  onClick={() => {
+                    if (!user) {
+                      setLocation(`/login?redirect=/order/${product.id}`);
+                    } else {
+                      setLocation(`/order/${product.id}`);
+                    }
+                  }}
+                >
+                  <ShoppingCart className="w-5 h-5 ml-2" />
+                  اشتري الآن
+                </Button>
               )}
             </div>
           </motion.div>
         </div>
+
+        {/* قسم آراء العملاء */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-16"
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-border pb-6">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">آراء العملاء</h2>
+              <span className="bg-primary/15 text-primary text-sm font-bold px-3 py-1 rounded-full border border-primary/30">
+                {totalReviewsCount} تقييم
+              </span>
+              <span className="bg-amber-500/10 text-amber-400 text-sm font-bold px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 fill-amber-400" />
+                {averageRating.toFixed(1)} / 5
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* نموذج إضافة تقييم */}
+            <div className="lg:col-span-1 border border-border bg-card rounded-2xl p-6 h-fit sticky top-24">
+              <h3 className="font-bold text-lg mb-4">أضف تقييمك</h3>
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">الاسم</label>
+                  <Input 
+                    value={newReview.name} 
+                    onChange={e => setNewReview({ ...newReview, name: e.target.value })} 
+                    placeholder="اكتب اسمك هنا" 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">التقييم</label>
+                  <div className="flex gap-2">
+                    {[1,2,3,4,5].map(s => (
+                      <button 
+                        key={s} 
+                        type="button" 
+                        onClick={() => setNewReview({ ...newReview, rating: s })}
+                        className="focus:outline-none transition-transform hover:scale-110"
+                      >
+                        <Star className={`w-6 h-6 ${s <= newReview.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">رأيك في المنتج</label>
+                  <Textarea 
+                    value={newReview.text} 
+                    onChange={e => setNewReview({ ...newReview, text: e.target.value })} 
+                    placeholder="شاركنا تجربتك مع المنتج..." 
+                    rows={4} 
+                    required 
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full gap-2" 
+                  disabled={!newReview.name.trim() || !newReview.text.trim() || isSubmittingReview}
+                >
+                  {isSubmittingReview ? (
+                    <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent flex-shrink-0 animate-spin rounded-full"></div>
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  إرسال التقييم
+                </Button>
+              </form>
+            </div>
+
+            {/* عرض التقييمات */}
+            <div className="lg:col-span-2 flex flex-col gap-4">
+              {allReviews.map((review, i) => (
+              <motion.div
+                key={review.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="bg-card border border-border rounded-2xl p-5 space-y-3 hover:border-primary/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-amber-500/30 flex items-center justify-center font-bold text-sm text-primary shrink-0">
+                      {review.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <p className="font-semibold text-sm">{review.name}</p>
+                        {review.verified && (
+                          <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{review.date}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5 shrink-0">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} className={`w-3.5 h-3.5 ${
+                        s <= Math.floor(review.rating) ? 'text-amber-400 fill-amber-400' :
+                        s === Math.ceil(review.rating) && review.rating % 1 !== 0 ? 'text-amber-400 fill-amber-400/50' :
+                        'text-gray-700'
+                      }`} />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <ThumbsUp className="w-3 h-3" />
+                  <span>مفيد</span>
+                </div>
+              </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </div>
+
+      {/* Floating Chat ONLY if user has an active order for this product */}
+      {hasActiveOrder && user?.phone && (
+        <ProductChat productId={product.id} userPhone={user.phone} />
+      )}
     </div>
   );
 }
