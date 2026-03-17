@@ -1,5 +1,3 @@
-// @ts-nocheck
-import app from "../artifacts/api-server/src/app";
+const app = require("../artifacts/api-server/dist/index.cjs");
 
-export default app;
 module.exports = app;

@@ -1,10 +1,11 @@
 {
-  "version": 2,
+  "buildCommand": "pnpm run build",
   "outputDirectory": "artifacts/nova-store/dist/public",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/index"
     },
     {
       "source": "/(.*)",
