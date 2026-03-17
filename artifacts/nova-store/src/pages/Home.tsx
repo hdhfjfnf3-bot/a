@@ -9,34 +9,50 @@ import { useReveal } from "@/components/RevealSystem";
 import { useRef, useState, useCallback } from "react";
 
 /* ─── خلفية فيديو متتالية ─── */
+// الترتيب: الأخف أولاً (4MB) ثم الأثقل (19MB)
 const BG_VIDEOS = ["video_bg2.mp4", "video_bg1.mp4"];
 
 function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => void }) {
   const [idx, setIdx] = useState(0);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const preloadStarted = useRef(false);
+
+  // بعد 1.5 ثانية من بدء الفيديو الأول، نبدأ تحميل الفيديو الثاني في الخلفية
+  React.useEffect(() => {
+    if (preloadStarted.current) return;
+    preloadStarted.current = true;
+    const t = setTimeout(() => {
+      const secondVideo = videoRefs.current[1];
+      if (secondVideo) {
+        secondVideo.preload = "auto";
+        // إجبار المتصفح على بدء التحميل الفعلي
+        secondVideo.load();
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   const onEnded = useCallback(() => {
     setIdx(prev => {
       const nextIdx = (prev + 1) % BG_VIDEOS.length;
-      onVideoChange(nextIdx);
+      const nextVideo = videoRefs.current[nextIdx];
+      if (nextVideo) {
+        nextVideo.currentTime = 0;
+        nextVideo.play().catch(() => {});
+      }
       return nextIdx;
     });
-  }, [onVideoChange]);
+  }, []);
 
+  // عند تغيير الفيديو النشط — شغّل الصحيح + أخبر الـ parent
   React.useEffect(() => {
     const currentVideo = videoRefs.current[idx];
-    if (currentVideo) {
-      currentVideo.currentTime = 0;
-      currentVideo.play().catch(() => { });
+    if (currentVideo && currentVideo.paused) {
+      currentVideo.play().catch(() => {});
     }
-
-    // التحميل المسبق للفيديو التالي أثناء تشغيل الحالي
-    const nextIdx = (idx + 1) % BG_VIDEOS.length;
-    const nextVideo = videoRefs.current[nextIdx];
-    if (nextVideo && nextVideo.preload !== "auto") {
-      nextVideo.preload = "auto";
-    }
-  }, [idx]);
+    // إخبار Parent بالفيديو الحالي بعد تحديث الحالة (لا داخل setter)
+    onVideoChange(idx);
+  }, [idx, onVideoChange]);
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#050302]" style={{ zIndex: 0 }}>
@@ -48,10 +64,12 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
           muted
           playsInline
           autoPlay={i === 0}
+          // الأول يُحمَّل فوراً، الثاني يبدأ بـ none ثم يُحوَّل لـ auto بعد 1.5 ثانية
           preload={i === 0 ? "auto" : "none"}
           onEnded={i === idx ? onEnded : undefined}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+            i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
+          }`}
         />
       ))}
       {/* تعتيم فاخر */}
