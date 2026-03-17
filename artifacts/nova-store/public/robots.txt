@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://nova-store.com/sitemap.xml
+
+# NOVA Store | نوفا ستور
+# Best online store in Egypt

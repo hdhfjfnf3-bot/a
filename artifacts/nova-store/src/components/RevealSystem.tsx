@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { createContext, useContext } from "react";
+import { motion, type Variants } from "framer-motion";
 
 /* ─── Context ─── */
 const RevealCtx = createContext({ revealed: false });
@@ -38,7 +38,7 @@ export function RevealItem({
 }) {
   const { revealed } = useReveal();
 
-  const variants = {
+  const variants: Variants = {
     hidden: {
       opacity: 0,
       y: dir === "up" ? 32 : dir === "down" ? -32 : 0,
@@ -53,7 +53,7 @@ export function RevealItem({
       transition: {
         duration: 0.65,
         delay,
-        ease: [0.22, 1, 0.36, 1],
+        ease: "easeOut",
       },
     },
   };

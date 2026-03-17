@@ -50,4 +50,29 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";
 
+// compat export: some shadcn components import buttonVariants
+export function buttonVariants(options?: { variant?: ButtonProps['variant']; size?: ButtonProps['size'] }): string {
+  const v = options?.variant ?? 'default';
+  const s = options?.size ?? 'default';
+  const variants: Record<string, string> = {
+    default: "bg-gradient-to-r from-primary to-yellow-600 text-primary-foreground shadow-lg shadow-primary/20",
+    outline: "border-2 border-primary text-primary hover:bg-primary/10",
+    ghost: "hover:bg-primary/10 text-foreground hover:text-primary",
+    link: "text-primary underline-offset-4 hover:underline",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+    glass: "glass-panel-gold text-foreground hover:bg-white/10",
+  };
+  const sizes: Record<string, string> = {
+    default: "h-12 px-6 py-3",
+    sm: "h-9 rounded-md px-3",
+    lg: "h-14 rounded-xl px-8 text-lg font-bold",
+    icon: "h-12 w-12",
+  };
+  return cn(
+    "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50",
+    variants[v] ?? variants['default'],
+    sizes[s]  ?? sizes['default'],
+  );
+}
+
 export { Button };

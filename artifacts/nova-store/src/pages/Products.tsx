@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGetProducts, useGetCategories } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,10 @@ import { Search, Filter } from "lucide-react";
 export function Products() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
+
+  useEffect(() => {
+    document.title = "تصفح المنتجات | NOVA Store نوفا ستور - عطور, إلكترونيات, ساعات";
+  }, []);
 
   // Fetch all products, allow filtering client-side or pass params to query
   const { data: products, isLoading } = useGetProducts({ 

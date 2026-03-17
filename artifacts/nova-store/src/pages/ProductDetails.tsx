@@ -199,15 +199,116 @@ export function ProductDetails() {
   }
 
   const isSoldOut = product.stock <= 0;
-  
-  // Combine stats
+
+  // Combine stats (must be before the SEO useEffect)
   const baseStats = getProductStats(product.id);
   const allReviews = [...realReviews, ...baseStats.reviews];
   const totalReviewsCount = allReviews.length;
-  // Calculate new average rating
   const totalRatingSum = allReviews.reduce((sum, rev) => sum + rev.rating, 0);
   const averageRating = totalReviewsCount > 0 ? (totalRatingSum / totalReviewsCount) : baseStats.rating;
 
+  useEffect(() => {
+    if (!product) return;
+
+    const name = product.nameAr || product.name || 'منتج';
+    const desc = product.descriptionAr || product.description || `اشتري ${name} من نوفا ستور بأفضل سعر`;
+    const price = product.price;
+    const image = product.images?.[0] || '/images/nova-logo-real.jpg';
+    const url = `https://nova-store.com/products/${product.id}`;
+
+    // ① Dynamic Page Title
+    document.title = `${name} | نوفا ستور NOVA - اشتري بـ ${price} جنيه مع توصيل سريع`;
+
+    // ② OG meta tags (WhatsApp/Facebook preview per product)
+    const setMeta = (prop: string, val: string, attr = 'property') => {
+      let el = document.querySelector(`meta[${attr}="${prop}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, prop); document.head.appendChild(el); }
+      el.setAttribute('content', val);
+    };
+    setMeta('og:title',       `${name} | نوفا ستور - شراء أونلاين`);
+    setMeta('og:description', `${desc} - السعر: ${price} جنيه. اطلب الآن وادفع عند الاستلام 🚀`);
+    setMeta('og:image',       image.startsWith('http') ? image : `https://nova-store.com${image}`);
+    setMeta('og:url',         url);
+    setMeta('og:type',        'product');
+    setMeta('product:price:amount',   String(price), 'property');
+    setMeta('product:price:currency', 'EGP', 'property');
+    setMeta('twitter:title',       `${name} | نوفا ستور`, 'name');
+    setMeta('twitter:description', `${desc} - ${price} جنيه فقط 🔥`, 'name');
+    setMeta('twitter:image',       image.startsWith('http') ? image : `https://nova-store.com${image}`, 'name');
+
+    // ③ Product JSON-LD (Google Rich Results: price + stars in search 🎯)
+    const oldScript = document.getElementById('product-jsonld');
+    if (oldScript) oldScript.remove();
+    const script = document.createElement('script');
+    script.id   = 'product-jsonld';
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": name,
+      "description": desc,
+      "url": url,
+      "image": product.images || [image],
+      "brand": { "@type": "Brand", "name": "NOVA Store" },
+      "offers": {
+        "@type": "Offer",
+        "url": url,
+        "priceCurrency": "EGP",
+        "price": price,
+        "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "seller": { "@type": "Organization", "name": "NOVA Store | نوفا ستور" },
+        "priceValidUntil": "2026-12-31",
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": "EG",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow"
+        },
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "shippingRate": { "@type": "MonetaryAmount", "value": "0", "currency": "EGP" },
+          "shippingDestination": { "@type": "DefinedRegion", "addressCountry": "EG" },
+          "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "handlingTime": { "@type": "QuantitativeValue", "minValue": 0, "maxValue": 1, "unitCode": "DAY" },
+            "transitTime": { "@type": "QuantitativeValue", "minValue": 2, "maxValue": 5, "unitCode": "DAY" }
+          }
+        }
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": String(averageRating.toFixed(1)),
+        "reviewCount": String(totalReviewsCount || 30),
+        "bestRating": "5",
+        "worstRating": "1"
+      }
+    });
+    document.head.appendChild(script);
+
+    // ④ BreadcrumbList per product
+    const oldBC = document.getElementById('breadcrumb-jsonld');
+    if (oldBC) oldBC.remove();
+    const bcScript = document.createElement('script');
+    bcScript.id   = 'breadcrumb-jsonld';
+    bcScript.type = 'application/ld+json';
+    bcScript.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "نوفا ستور", "item": "https://nova-store.com/" },
+        { "@type": "ListItem", "position": 2, "name": "المنتجات", "item": "https://nova-store.com/products" },
+        { "@type": "ListItem", "position": 3, "name": name, "item": url }
+      ]
+    });
+    document.head.appendChild(bcScript);
+
+    return () => {
+      document.title = 'NOVA Store | نوفا ستور';
+      document.getElementById('product-jsonld')?.remove();
+      document.getElementById('breadcrumb-jsonld')?.remove();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, averageRating, totalReviewsCount]);
+  
   const discountPct = product.originalPrice && product.originalPrice > product.price
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
