@@ -12,31 +12,45 @@ import { useRef, useState, useCallback } from "react";
 const BG_VIDEOS = ["video_bg1.mp4", "video_bg2.mp4"];
 
 function VideoBackground() {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [idx, setIdx] = useState(0);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   const onEnded = useCallback(() => {
     setIdx(prev => (prev + 1) % BG_VIDEOS.length);
   }, []);
 
-  // عند تغيير الفيديو نحمل ونشغل\n
-  const onLoadedData = useCallback(() => {
-    videoRef.current?.play().catch(() => {});
-  }, []);
+  React.useEffect(() => {
+    const currentVideo = videoRefs.current[idx];
+    if (currentVideo) {
+      currentVideo.currentTime = 0;
+      currentVideo.play().catch(() => {});
+    }
+    
+    // التحميل المسبق للفيديو التالي أثناء تشغيل الحالي
+    const nextIdx = (idx + 1) % BG_VIDEOS.length;
+    const nextVideo = videoRefs.current[nextIdx];
+    if (nextVideo && nextVideo.preload !== "auto") {
+      nextVideo.preload = "auto";
+    }
+  }, [idx]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
-      <video
-        ref={videoRef}
-        key={idx}
-        src={`${import.meta.env.BASE_URL}${BG_VIDEOS[idx]}`}
-        autoPlay
-        muted
-        playsInline
-        onEnded={onEnded}
-        onLoadedData={onLoadedData}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+    <div className="absolute inset-0 overflow-hidden bg-[#050302]" style={{ zIndex: 0 }}>
+      {BG_VIDEOS.map((src, i) => (
+        <video
+          key={src}
+          ref={el => { videoRefs.current[i] = el; }}
+          src={`${import.meta.env.BASE_URL}${src}`}
+          muted
+          playsInline
+          autoPlay={i === 0}
+          preload={i === 0 ? "auto" : "none"}
+          onEnded={i === idx ? onEnded : undefined}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+            i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
+          }`}
+        />
+      ))}
       {/* تعتيم فاخر */}
       <div
         className="absolute inset-0"

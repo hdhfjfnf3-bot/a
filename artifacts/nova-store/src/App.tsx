@@ -16,6 +16,12 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Admin } from "./pages/Admin";
 import { Notifications } from "./pages/Notifications";
+import { About } from "./pages/About";
+import { Contact } from "./pages/Contact";
+import { Returns } from "./pages/Returns";
+import { Shipping } from "./pages/Shipping";
+import { FAQ } from "./pages/FAQ";
+import { Terms } from "./pages/Terms";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
@@ -38,6 +44,12 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/admin" component={Admin} />
       <Route path="/notifications" component={Notifications} />
+      <Route path="/about" component={About} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/returns" component={Returns} />
+      <Route path="/shipping" component={Shipping} />
+      <Route path="/faq" component={FAQ} />
+      <Route path="/terms" component={Terms} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,0 +1,81 @@
+import { HelpCircle, ChevronDown } from "lucide-react";
+import { useState } from "react";
+
+const faqs = [
+  {
+    question: "هل يمكنني معاينة الطلب قبل الدفع والاستلام؟",
+    answer: "نعم بالتأكيد! نحن نضمن لك حق فتح الشحنة ومعاينتها بالكامل قبل دفع أي مبلغ للمندوب. إذا لم يعجبك المنتج يمكنك رفض الاستلام دون دفع مصاريف الشحن."
+  },
+  {
+    question: "متى سيصلني الطلب بعد تأكيده؟",
+    answer: "نحن نفخر بسرعة التوصيل لدينا. عادة ما يصل الطلب خلال 2 إلى 4 أيام عمل حسب محافظتك."
+  },
+  {
+    question: "ما هي طرق الدفع المتاحة؟",
+    answer: "لتوفير أقصى درجات الأمان والراحة لعملائنا، نعتمد حالياً نظام الدفع عند الاستلام (Cash on Delivery). تدفع فقط عندما تستلم طلبك وتتأكد منه."
+  },
+  {
+    question: "ماذا أفعل إذا استلمت منتجأً به عيب أو غير مطابق للطلب؟",
+    answer: "لا تقلق أبداً! تواصل مع خدمة العملاء الخاص بنا في أسرع وقت. سنقوم باستبدال المنتج مجاناً وبدون أي تكلفة شحن إضافية عليك أو استرداد المبلغ بالكامل بناءً على رغبتك."
+  },
+  {
+    question: "هل المنتجات المعروضة أصلية ومطابقة للصور؟",
+    answer: "جميع الصور في متجرنا هي صور حقيقية للمنتجات. نحن ننتقي منتجاتنا بعناية فائقة من أفضل المصادر لنضمن لك جودة تليق بك (High-End Quality)."
+  }
+];
+
+export function FAQ() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  return (
+    <div className="py-20 animate-fade-in relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="container mx-auto px-4 max-w-3xl relative z-10">
+        <div className="text-center mb-16">
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <HelpCircle className="w-10 h-10 text-primary" />
+          </div>
+          <h1 className="text-4xl font-bold mb-6 font-luxury text-gradient-gold">
+            الأسئلة الشائعة
+          </h1>
+          <p className="text-xl text-muted-foreground leading-relaxed">
+            جمعنا لك إجابات لأكثر الأسئلة شیوعاً لتكون على دراية تامة بكل التفاصيل. وإذا كان لديك أي سؤال آخر، لا تتردد في مراسلتنا!
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, index) => (
+            <div 
+              key={index} 
+              className={`glass-panel border rounded-xl overflow-hidden transition-all duration-300 ${
+                openIndex === index ? "border-primary/50 shadow-[0_0_15px_rgba(212,175,55,0.1)]" : "border-white/5 hover:border-white/10"
+              }`}
+            >
+              <button
+                className="w-full text-right p-6 flex items-center justify-between gap-4 font-bold text-lg text-foreground"
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              >
+                <span>{faq.question}</span>
+                <ChevronDown 
+                  className={`w-5 h-5 text-primary shrink-0 transition-transform duration-300 ${
+                    openIndex === index ? "rotate-180" : ""
+                  }`} 
+                />
+              </button>
+              <div 
+                className={`overflow-hidden transition-all duration-300 ${
+                  openIndex === index ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                }`}
+              >
+                <div className="p-6 pt-0 text-muted-foreground text-lg leading-relaxed border-t border-white/5">
+                  {faq.answer}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
