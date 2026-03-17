@@ -7,6 +7,7 @@ import productsRouter from "./products";
 import ordersRouter from "./orders";
 import uploadRouter from "./upload";
 import messagesRouter from "./messages";
+import seoRouter from "./seo";
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.use("/products", productsRouter);
 router.use("/orders", ordersRouter);
 router.use("/upload", uploadRouter);
 router.use("/messages", messagesRouter);
+router.use("/seo", seoRouter);
 
 export default router;
 

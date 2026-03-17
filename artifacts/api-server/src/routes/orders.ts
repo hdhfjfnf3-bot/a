@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Router } from "express";
 import { supabase, db, ordersTable, productsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -58,19 +58,43 @@ router.post("/", async (req, res) => {
       return;
     }
 
+    const oneMinuteAgo = new Date(Date.now() - 60000);
+
     if (supabase) {
+      // 1- Check for duplicate order within 1 min
+      const { data: duplicate } = await supabase
+        .from("orders").select("id").eq("phone", phone)
+        .eq("product_id", Number(productId)).gte("created_at", oneMinuteAgo.toISOString()).limit(1);
+      
+      if (duplicate && duplicate.length > 0) {
+        res.status(429).json({ error: "لقد قمت بطلب هذا المنتج للتو، يرجى الانتظار دقيقة" });
+        return;
+      }
+
+      // 2- Get product details
       const { data: product, error: pErr } = await supabase
         .from("products").select("*").eq("id", Number(productId)).single();
       if (pErr || !product) { res.status(404).json({ error: "المنتج غير موجود" }); return; }
 
-      const totalPrice = Number(product.price) * Number(quantity);
+      const orderQty = Number(quantity);
+      if (product.stock < orderQty) {
+        res.status(400).json({ error: "الكمية المطلوبة غير متوفرة في المخزون" });
+        return;
+      }
+
+      const totalPrice = Number(product.price) * orderQty;
+      
+      // 3- Create Order
       const { data: order, error: oErr } = await supabase.from("orders").insert({
         product_id: Number(productId), full_name: fullName, phone,
         alt_phone: altPhone, governorate, address,
-        quantity: Number(quantity), total_price: totalPrice,
+        quantity: orderQty, total_price: totalPrice,
         facebook_page: facebookPage, notes,
       }).select().single();
       if (oErr) throw oErr;
+
+      // 4- Decrease Stock
+      await supabase.from("products").update({ stock: product.stock - orderQty }).eq("id", Number(productId));
 
       res.status(201).json({
         id: order.id, productId: order.product_id,
@@ -85,14 +109,42 @@ router.post("/", async (req, res) => {
       return;
     }
 
+    // --- Local DB Logic ---
+    // 1- Check for duplicate order within 1 min
+    const [duplicate] = await db.select({ id: ordersTable.id }).from(ordersTable)
+      .where(and(
+        eq(ordersTable.phone, phone),
+        eq(ordersTable.productId, Number(productId)),
+        gte(ordersTable.createdAt, oneMinuteAgo)
+      )).limit(1);
+
+    if (duplicate) {
+      res.status(429).json({ error: "لقد قمت بطلب هذا المنتج للتو، يرجى الانتظار دقيقة" });
+      return;
+    }
+
+    // 2- Get product details
     const [product] = await db.select().from(productsTable).where(eq(productsTable.id, Number(productId))).limit(1);
     if (!product) { res.status(404).json({ error: "المنتج غير موجود" }); return; }
 
-    const totalPrice = Number(product.price) * Number(quantity);
+    const orderQty = Number(quantity);
+    if (product.stock < orderQty) {
+      res.status(400).json({ error: "الكمية المطلوبة غير متوفرة في المخزون" });
+      return;
+    }
+
+    const totalPrice = Number(product.price) * orderQty;
+    
+    // 3- Create Order
     const [order] = await db.insert(ordersTable).values({
       productId: Number(productId), fullName, phone, altPhone, governorate, address,
-      quantity: Number(quantity), totalPrice: String(totalPrice), facebookPage, notes,
+      quantity: orderQty, totalPrice: String(totalPrice), facebookPage, notes,
     }).returning();
+
+    // 4- Decrease Stock
+    await db.update(productsTable)
+      .set({ stock: sql`${productsTable.stock} - ${orderQty}` })
+      .where(eq(productsTable.id, Number(productId)));
 
     res.status(201).json({
       ...order, productName: product.name, productNameAr: product.nameAr,

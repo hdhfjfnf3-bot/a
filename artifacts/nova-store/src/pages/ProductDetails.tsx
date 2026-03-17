@@ -178,30 +178,8 @@ export function ProductDetails() {
     }
   }, [id]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-        <h1 className="text-4xl font-bold text-destructive mb-4">المنتج غير موجود</h1>
-        <p className="text-muted-foreground mb-8">عذراً، لم نتمكن من العثور على المنتج المطلوب.</p>
-        <Link href="/products">
-          <Button>العودة للمنتجات</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  const isSoldOut = product.stock <= 0;
-
-  // Combine stats (must be before the SEO useEffect)
-  const baseStats = getProductStats(product.id);
+  // Combine stats (must be calculated before SEO useEffect)
+  const baseStats = product ? getProductStats(product.id) : { rating: 5, reviews: [], salesCount: 0 };
   const allReviews = [...realReviews, ...baseStats.reviews];
   const totalReviewsCount = allReviews.length;
   const totalRatingSum = allReviews.reduce((sum, rev) => sum + rev.rating, 0);
@@ -308,6 +286,28 @@ export function ProductDetails() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, averageRating, totalReviewsCount]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
+        <h1 className="text-4xl font-bold text-destructive mb-4">المنتج غير موجود</h1>
+        <p className="text-muted-foreground mb-8">عذراً، لم نتمكن من العثور على المنتج المطلوب.</p>
+        <Link href="/products">
+          <Button>العودة للمنتجات</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const isSoldOut = product.stock <= 0;
   
   const discountPct = product.originalPrice && product.originalPrice > product.price
     ? Math.round((1 - product.price / product.originalPrice) * 100)

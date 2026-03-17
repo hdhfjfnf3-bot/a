@@ -4,6 +4,18 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/products/:id",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/google9acb437e8fc9e39c.html",
+      "destination": "/google9acb437e8fc9e39c.html"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index"
     },

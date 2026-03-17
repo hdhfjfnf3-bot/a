@@ -9,15 +9,16 @@ import { useReveal } from "@/components/RevealSystem";
 import { useRef, useState, useCallback } from "react";
 
 /* ─── خلفية فيديو متتالية ─── */
-// الترتيب: الأخف أولاً (4MB) ثم الأثقل (19MB)
-const BG_VIDEOS = ["video_bg2.mp4", "video_bg1.mp4"];
+// video_bg1.mp4 = 4MB (الأخف) ← يشتغل أولاً
+// video_bg2.mp4 = 19MB (الأثقل) ← يُحمَّل في الخلفية بعد ثانيتين
+const BG_VIDEOS = ["video_bg1.mp4", "video_bg2.mp4"];
 
 function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => void }) {
   const [idx, setIdx] = useState(0);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const preloadStarted = useRef(false);
 
-  // بعد 1.5 ثانية من بدء الفيديو الأول، نبدأ تحميل الفيديو الثاني في الخلفية
+  // بعد 4 ثواني من بدء الفيديو الأول، نبدأ تحميل الفيديو الثاني في الخلفية لتجنب سحب سرعة الإنترنت
   React.useEffect(() => {
     if (preloadStarted.current) return;
     preloadStarted.current = true;
@@ -28,7 +29,7 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
         // إجبار المتصفح على بدء التحميل الفعلي
         secondVideo.load();
       }
-    }, 1500);
+    }, 4000); // زيادة التأخير إلى 4 ثواني
     return () => clearTimeout(t);
   }, []);
 
