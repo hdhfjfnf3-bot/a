@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from "framer-motion";
  */
 export function NovaLoader({ onDone }: { onDone: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoReady, setVideoReady] = useState(false);
   const [phase, setPhase] = useState<"loading" | "fade" | "out">("loading");
 
   const finish = () => {
@@ -23,30 +22,10 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
   };
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleReady = () => {
-      setVideoReady(true);
-      video.play().catch(() => {});
-    };
-
-    // نستخدم loadeddata لأنها تعني أن أول إطار متاح للرسم
-    video.addEventListener("loadeddata", handleReady, { once: true });
-    // كفولباك نستخدم canplay أيضاً
-    video.addEventListener("canplay", handleReady, { once: true });
-
-    // إذا كان الكاش يحمل البيانات بالفعل
-    if (video.readyState >= 2) {
-      handleReady();
-    }
-
-    // timeout احتياطي للنهاية: 8 ثواني كحد أقصى للودر
-    const safetyTimer = setTimeout(finish, 8000);
+    // timeout احتياطي للنهاية لضمان عدم بقاء اللودر للأبد: 6 ثواني كحد أقصى (تم تقليله من 8 لسرعة التجربة)
+    const safetyTimer = setTimeout(finish, 6000);
 
     return () => {
-      video.removeEventListener("loadeddata", handleReady);
-      video.removeEventListener("canplay", handleReady);
       clearTimeout(safetyTimer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,26 +45,19 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
             خلفية اللوجو تظهر فوراً أثناء انتظار الفيديو 
             لكي لا يرى المستخدم شاشة سوداء أبداً
           */}
-          <AnimatePresence>
-            {!videoReady && (
-              <motion.div
-                key="fallback-logo"
-                className="absolute inset-0 flex items-center justify-center z-0"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.5 } }}
-              >
-                <img
-                  src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`}
-                  alt="NOVA Loading"
-                  className="w-48 opacity-40 animate-pulse mix-blend-screen"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div
+            key="fallback-logo"
+            className="absolute inset-0 flex items-center justify-center z-0"
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`}
+              alt="NOVA Loading"
+              className="w-48 opacity-40 animate-pulse mix-blend-screen"
+            />
+          </div>
 
-          {/* الفيديو الرئيسي يخفي اللوجو ببطء عندما يكون جاهزاً */}
-          <motion.video
+          {/* الفيديو الرئيسي معروض بشفافية كاملة دائماً ليظهر فور وروده */}
+          <video
             ref={videoRef}
             src={`${import.meta.env.BASE_URL}video_1773620069481190.mp4`}
             autoPlay
@@ -93,12 +65,11 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
             playsInline
             preload="auto"
             onEnded={finish}
-            // نعالج الـ error كفولباك لكي لا يعلق اللودر
             onError={finish}
+            onPlaying={() => {
+              // اختياري: إذا كان الفيديو يشتغل بشكل جيد
+            }}
             className="absolute inset-0 w-full h-full object-cover z-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: videoReady ? 1 : 0 }}
-            transition={{ duration: 0.6 }}
           />
 
           {/* طبقة سوداء تظهر عند الـ fade للانتقال للموقع */}

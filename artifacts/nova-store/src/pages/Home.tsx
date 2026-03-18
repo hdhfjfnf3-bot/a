@@ -9,9 +9,9 @@ import { useReveal } from "@/components/RevealSystem";
 import { useRef, useState, useCallback } from "react";
 
 /* ─── خلفية فيديو متتالية ─── */
-// video_bg1.mp4  ← يشتغل أولاً
-// video_bg2.mp4  ← يُحمَّل في الخلفية، ثم يُشغَّل بعد انتهاء الأول فقط إذا جهز
-const BG_VIDEOS = ["video_bg2.mp4", "video_bg1.mp4"];
+// video_bg1.mp4 (4MB) ← يشتغل أولاً للسرعة القصوى
+// video_bg2.mp4 (18MB) ← يُحمَّل في الخلفية، ثم يُشغَّل لاحقاً
+const BG_VIDEOS = ["video_bg1.mp4", "video_bg2.mp4"];
 
 function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => void }) {
   const [idx, setIdx] = useState(0);
