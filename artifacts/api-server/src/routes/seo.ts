@@ -50,7 +50,7 @@ router.get("/sitemap.xml", async (_req, res) => {
 // 2. Server-Side OG Injection for Social Crawlers
 // When WhatsApp/Facebook requests /products/:id, Vercel will rewrite it to /api/seo/product/:id
 // If it's a bot, we serve a tiny HTML with meta tags. If it's a real user, we redirect to the actual frontend.
-router.get("/product/:id", async (req, res) => {
+router.get("/products/:id", async (req, res) => {
   try {
     const userAgent = req.headers["user-agent"] || "";
     // Check if the requester is a social media crawler

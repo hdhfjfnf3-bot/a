@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "/api/seo/sitemap.xml"
+      "destination": "/api/index"
     },
     {
       "source": "/products/:id",
-      "destination": "/api/seo/product/:id"
+      "destination": "/api/index"
     },
     {
       "source": "/google9acb437e8fc9e39c.html",

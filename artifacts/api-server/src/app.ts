@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import router from "./routes";
+import seoRouter from "./routes/seo";
 
 const app = express();
 
@@ -9,6 +10,9 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Mount SEO routes at the root to catch Vercel rewrites
+app.use("/", seoRouter);
 
 app.use("/api", router);
 
