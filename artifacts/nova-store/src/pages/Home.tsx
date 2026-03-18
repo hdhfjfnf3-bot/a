@@ -87,7 +87,6 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
           playsInline
           autoPlay={i === 0}
           preload={i === 0 ? "auto" : "none"}
-          poster={i === 0 ? `${import.meta.env.BASE_URL}images/og-image.png` : undefined}
           onEnded={i === idx ? onEnded : undefined}
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out ${i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
