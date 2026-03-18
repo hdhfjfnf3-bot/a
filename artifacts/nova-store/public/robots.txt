@@ -3,7 +3,7 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://noovaa.com/sitemap.xml
+Sitemap: https://noovaa.vercel.app/sitemap.xml
 
 # NOVA Store | نوفا ستور
 # Best online store in Egypt
