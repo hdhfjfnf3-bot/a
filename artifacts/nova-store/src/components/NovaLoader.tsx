@@ -56,20 +56,13 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
             />
           </div>
 
-          {/* فيديو الخلفية الذكي (يملأ الشاشة مع تأثير Blur احترافي) */}
-          <video
-            src={`${import.meta.env.BASE_URL}video_1773620069481190.mp4`}
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-60 scale-110 z-0"
-          />
 
-          {/* الفيديو الرئيسي للوجو (يحافظ على حجمه الطبيعي بدون قص) */}
+
+          {/* الفيديو الرئيسي مع صورة مؤقتة (Poster) لمنع التأخير السريع للحظة التحميل */}
           <video
             ref={videoRef}
             src={`${import.meta.env.BASE_URL}video_1773620069481190.mp4`}
+            poster={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`}
             autoPlay
             muted
             playsInline
