@@ -28,7 +28,7 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
     return () => {
       clearTimeout(safetyTimer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   return (
@@ -56,7 +56,17 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
             />
           </div>
 
-          {/* الفيديو الرئيسي معروض بشفافية كاملة دائماً ليظهر فور وروده */}
+          {/* فيديو الخلفية الذكي (يملأ الشاشة مع تأثير Blur احترافي) */}
+          <video
+            src={`${import.meta.env.BASE_URL}video_1773620069481190.mp4`}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-60 scale-110 z-0"
+          />
+
+          {/* الفيديو الرئيسي للوجو (يحافظ على حجمه الطبيعي بدون قص) */}
           <video
             ref={videoRef}
             src={`${import.meta.env.BASE_URL}video_1773620069481190.mp4`}
@@ -66,10 +76,7 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
             preload="auto"
             onEnded={finish}
             onError={finish}
-            onPlaying={() => {
-              // اختياري: إذا كان الفيديو يشتغل بشكل جيد
-            }}
-            className="absolute inset-0 w-full h-full object-cover z-10"
+            className="absolute inset-0 w-full h-full object-contain z-10"
           />
 
           {/* طبقة سوداء تظهر عند الـ fade للانتقال للموقع */}
