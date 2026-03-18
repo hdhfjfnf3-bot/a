@@ -11,10 +11,10 @@ import { formatPrice } from "@/lib/utils";
 import {
   Package, ShoppingBag, TrendingUp, RefreshCw, Plus, Pencil, Trash2,
   X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, MapPin, Phone, Facebook,
-  Upload, ImagePlus, Loader2, MessageCircle, Send
+  Upload, ImagePlus, Loader2, MessageCircle, Send, Users
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
 
@@ -399,6 +399,18 @@ export function Admin() {
   const { data: orders, isLoading: isOrdersLoading } = useGetOrders({ query: { enabled: user?.role === 'admin', queryKey: ['/api/orders'] } });
   const { data: productsRaw, isLoading: isProductsLoading } = useGetProducts(undefined, { query: { enabled: user?.role === 'admin', queryKey: ['/api/products'] } });
   const { data: categoriesRaw } = useGetCategories({ query: { enabled: true, queryKey: ['/api/categories'] } });
+  
+  // Fetch real visitors
+  const { data: analytics } = useQuery({
+    queryKey: ['/api/analytics/visits'],
+    queryFn: async () => {
+      const res = await fetch('/api/analytics/visits');
+      return res.json();
+    },
+    enabled: user?.role === 'admin',
+    refetchInterval: 10000 // Refresh every 10s
+  });
+
   const toArr = (d: any) => Array.isArray(d) ? d : (d?.data ?? []);
   const products = toArr(productsRaw);
   const categories = toArr(categoriesRaw);
@@ -472,8 +484,8 @@ export function Admin() {
   const editProduct = products?.find((p: any) => typeof productModal === 'object' && productModal !== null && productModal.id != null && p.id === productModal.id);
 
   const statCards = [
+    { title: "الزوار الحقيقيين", value: analytics?.count || 0, icon: Users, color: "text-rose-400", bg: "bg-rose-500/10" },
     { title: "إجمالي الطلبات", value: orders?.length || 0, icon: ShoppingBag, color: "text-blue-400", bg: "bg-blue-500/10" },
-    { title: "طلبات جديدة", value: orders?.filter(o => o.status === 'pending').length || 0, icon: RefreshCw, color: "text-amber-400", bg: "bg-amber-500/10" },
     { title: "إجمالي المنتجات", value: products?.length || 0, icon: Package, color: "text-purple-400", bg: "bg-purple-500/10" },
     { title: "المبيعات المحققة", value: formatPrice(orders?.filter(o => o.status === 'delivered').reduce((a, o) => a + o.totalPrice, 0) || 0), icon: TrendingUp, color: "text-green-400", bg: "bg-green-500/10" },
   ];
@@ -513,8 +525,11 @@ export function Admin() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {statCards.map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-              className="p-5 rounded-2xl border border-border bg-card shadow-lg">
-              <div className="flex justify-between items-start">
+              className="p-5 rounded-2xl border border-border bg-card shadow-lg relative overflow-hidden group">
+              {/* Optional animated background for pulse/visual */}
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${s.bg}`} />
+              
+              <div className="flex justify-between items-start relative z-10">
                 <div>
                   <p className="text-muted-foreground text-xs mb-2">{s.title}</p>
                   <p className="text-2xl font-bold">{s.value}</p>

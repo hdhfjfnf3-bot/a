@@ -8,6 +8,7 @@ import ordersRouter from "./orders";
 import uploadRouter from "./upload";
 import messagesRouter from "./messages";
 import seoRouter from "./seo";
+import analyticsRouter from "./analytics";
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use("/orders", ordersRouter);
 router.use("/upload", uploadRouter);
 router.use("/messages", messagesRouter);
 router.use("/seo", seoRouter);
+router.use("/analytics", analyticsRouter);
 
 export default router;
 

@@ -71,6 +71,14 @@ function Router() {
 function App() {
   const [revealed, setRevealed] = useState(false);
 
+  useEffect(() => {
+    // تسجيل الزيارات الحقيقية للموقع (بحد أقصى مرة واحدة لكل جلسة)
+    if (!sessionStorage.getItem("nova_visited")) {
+      sessionStorage.setItem("nova_visited", "true");
+      fetch("/api/analytics/visit", { method: "POST" }).catch(() => {});
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
