@@ -87,6 +87,7 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
           playsInline
           autoPlay={i === 0}
           preload={i === 0 ? "auto" : "none"}
+          poster={i === 0 ? `${import.meta.env.BASE_URL}images/og-image.png` : undefined}
           onEnded={i === idx ? onEnded : undefined}
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out ${i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
@@ -220,7 +221,10 @@ export function Home() {
             <img
               src={`${import.meta.env.BASE_URL}images/nova-logo-real.jpg`}
               alt="NOVA"
-              className="w-44 md:w-64 object-contain drop-shadow-[0_0_60px_rgba(212,175,55,0.7)]"
+              width={256}
+              height={80}
+              fetchPriority="high"
+              className="w-44 md:w-64 h-auto object-contain drop-shadow-[0_0_60px_rgba(212,175,55,0.7)]"
             />
           </motion.div>
 

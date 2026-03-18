@@ -78,6 +78,8 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             alt={product.nameAr || product.name}
             className="w-full h-full object-contain drop-shadow-2xl transition-transform duration-700 group-hover:scale-110"
             loading="lazy"
+            width={400}
+            height={500}
           />
           
           {/* Quick Actions Overlay */}
