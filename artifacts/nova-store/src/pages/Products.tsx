@@ -4,21 +4,66 @@ import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
 import { Search, Filter } from "lucide-react";
 
+const BASE = "https://noovaa.vercel.app";
+
 export function Products() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
 
-  useEffect(() => {
-    document.title = "تصفح المنتجات | NOVA Store نوفا ستور - عطور, إلكترونيات, ساعات";
-  }, []);
-
-  // Fetch all products, allow filtering client-side or pass params to query
   const { data: products, isLoading } = useGetProducts({ 
     search: search.length > 2 ? search : undefined,
     categoryId: selectedCategory 
   });
-  
   const { data: categories } = useGetCategories();
+
+  // --- SEO per page ---
+  useEffect(() => {
+    // Title + description
+    document.title = "تصفح المنتجات | NOVA Store نوفا ستور - عطور, إلكترونيات, ساعات فاخرة";
+    const setMeta = (name: string, val: string, attr = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute('content', val);
+    };
+    setMeta('description', 'تسوق أونلاين في مصر | عطور أصلية - إلكترونيات - ساعات فاخرة - إكسسوارات بأفضل الأسعار وخصومات تصل 90%');
+    setMeta('og:title', 'منتجات نوفا ستور | NOVA Store - تسوق أونلاين', 'property');
+    setMeta('og:description', 'عطور أصلية | إلكترونيات | ساعات فاخرة | إكسسوارات - خصومات 90% 🔥 دفع عند الاستلام', 'property');
+    setMeta('og:url', `${BASE}/products`, 'property');
+
+    // Canonical
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+    canonical.href = `${BASE}/products`;
+
+    // CollectionPage JSON-LD
+    const old = document.getElementById('collection-jsonld');
+    if (old) old.remove();
+    const script = document.createElement('script');
+    script.id = 'collection-jsonld';
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "منتجات نوفا ستور",
+      "description": "تسوق أونلاين في مصر - عطور أصلية, إلكترونيات, ساعات فاخرة",
+      "url": `${BASE}/products`,
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "نوفا ستور", "item": `${BASE}/` },
+          { "@type": "ListItem", "position": 2, "name": "المنتجات", "item": `${BASE}/products` }
+        ]
+      }
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      document.title = 'NOVA Store | نوفا ستور';
+      document.getElementById('collection-jsonld')?.remove();
+      const c = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (c) c.href = `${BASE}/`;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen pt-32 pb-24">

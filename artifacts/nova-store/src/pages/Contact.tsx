@@ -1,6 +1,72 @@
+import { useEffect } from "react";
 import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
 
+const BASE = "https://noovaa.vercel.app";
+
 export function Contact() {
+  useEffect(() => {
+    document.title = "تواصل معنا | NOVA Store نوفا ستور - واتساب، هاتف، بريد إلكتروني";
+    const setMeta = (name: string, val: string, attr = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute('content', val);
+    };
+    setMeta('description', 'تواصل مع نوفا ستور الآن - عبر واتساب 01005209667 أو هاتف. خدمة عملاء يومياً من 10 صباحاً حتى 10 مساءً.');
+    setMeta('og:title', 'تواصل معنا | نوفا ستور NOVA Store', 'property');
+    setMeta('og:url', `${BASE}/contact`, 'property');
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+    canonical.href = `${BASE}/contact`;
+
+    const old = document.getElementById('contact-jsonld');
+    if (old) old.remove();
+    const s = document.createElement('script');
+    s.id = 'contact-jsonld';
+    s.type = 'application/ld+json';
+    s.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ContactPage",
+      "name": "تواصل مع نوفا ستور",
+      "url": `${BASE}/contact`,
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "نوفا ستور", "item": `${BASE}/` },
+          { "@type": "ListItem", "position": 2, "name": "تواصل معنا", "item": `${BASE}/contact` }
+        ]
+      },
+      "mainEntity": {
+        "@type": "Organization",
+        "name": "NOVA Store",
+        "telephone": "+201005209667",
+        "email": "ahmedmhram3@gmail.com",
+        "contactPoint": [{
+          "@type": "ContactPoint",
+          "telephone": "+201005209667",
+          "contactType": "customer service",
+          "areaServed": "EG",
+          "availableLanguage": ["Arabic"],
+          "hoursAvailable": {
+            "@type": "OpeningHoursSpecification",
+            "opens": "10:00",
+            "closes": "22:00",
+            "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+          }
+        }]
+      }
+    });
+    document.head.appendChild(s);
+
+    return () => {
+      document.title = 'NOVA Store | نوفا ستور';
+      document.getElementById('contact-jsonld')?.remove();
+      const c = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (c) c.href = `${BASE}/`;
+    };
+  }, []);
+
+
   return (
     <div className="py-20 animate-fade-in relative overflow-hidden">
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />

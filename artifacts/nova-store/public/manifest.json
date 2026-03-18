@@ -1,0 +1,48 @@
+{
+  "name": "NOVA Store | نوفا ستور",
+  "short_name": "نوفا NOVA",
+  "description": "أفضل متجر إلكتروني في مصر - عطور أصلية، إلكترونيات، ساعات فاخرة بأقل الأسعار",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050302",
+  "theme_color": "#D4AF37",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
+  "categories": ["shopping", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "تصفح المنتجات",
+      "url": "/products",
+      "description": "اكتشف جميع منتجات نوفا ستور"
+    },
+    {
+      "name": "تواصل معنا",
+      "url": "/contact",
+      "description": "تواصل مع فريق خدمة العملاء"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/images/nova-logo-real.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/nova-logo-real.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/og-image.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "label": "نوفا ستور - الصفحة الرئيسية"
+    }
+  ]
+}

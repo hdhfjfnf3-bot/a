@@ -1,7 +1,56 @@
+import { useEffect } from "react";
 import { ShieldCheck, Star, Clock, HeartHandshake } from "lucide-react";
 import { Link } from "wouter";
 
+const BASE = "https://noovaa.vercel.app";
+
 export function About() {
+  useEffect(() => {
+    document.title = "من نحن | NOVA Store نوفا ستور - متجر إلكتروني موثوق في مصر";
+    const setMeta = (name: string, val: string, attr = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute('content', val);
+    };
+    setMeta('description', 'تعرف على نوفا ستور - متجر إلكتروني موثوق في مصر يقدم منتجات فاخرة أصلية بضمان الجودة والدفع عند الاستلام.');
+    setMeta('og:title', 'من نحن | نوفا ستور NOVA Store', 'property');
+    setMeta('og:url', `${BASE}/about`, 'property');
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+    canonical.href = `${BASE}/about`;
+
+    // Organization JSON-LD
+    const old = document.getElementById('about-jsonld');
+    if (old) old.remove();
+    const s = document.createElement('script');
+    s.id = 'about-jsonld';
+    s.type = 'application/ld+json';
+    s.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      "name": "من نحن - NOVA Store",
+      "url": `${BASE}/about`,
+      "description": "تعرف على نوفا ستور، المتجر الإلكتروني المتخصص في المنتجات الفاخرة بمصر",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "نوفا ستور", "item": `${BASE}/` },
+          { "@type": "ListItem", "position": 2, "name": "من نحن", "item": `${BASE}/about` }
+        ]
+      }
+    });
+    document.head.appendChild(s);
+
+    return () => {
+      document.title = 'NOVA Store | نوفا ستور';
+      document.getElementById('about-jsonld')?.remove();
+      const c = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (c) c.href = `${BASE}/`;
+    };
+  }, []);
+
+
   return (
     <div className="py-20 animate-fade-in relative overflow-hidden">
       {/* Glow Effects */}

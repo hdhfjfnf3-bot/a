@@ -9,49 +9,70 @@ import { useReveal } from "@/components/RevealSystem";
 import { useRef, useState, useCallback } from "react";
 
 /* ─── خلفية فيديو متتالية ─── */
-// video_bg1.mp4 = 4MB (الأخف) ← يشتغل أولاً
-// video_bg2.mp4 = 19MB (الأثقل) ← يُحمَّل في الخلفية بعد ثانيتين
+// video_bg1.mp4  ← يشتغل أولاً
+// video_bg2.mp4  ← يُحمَّل في الخلفية، ثم يُشغَّل بعد انتهاء الأول فقط إذا جهز
 const BG_VIDEOS = ["video_bg1.mp4", "video_bg2.mp4"];
 
 function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => void }) {
   const [idx, setIdx] = useState(0);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const nextReadyRef = useRef(false); // هل الفيديو الثاني جاهز؟
   const preloadStarted = useRef(false);
 
-  // بعد 4 ثواني من بدء الفيديو الأول، نبدأ تحميل الفيديو الثاني في الخلفية لتجنب سحب سرعة الإنترنت
+  // ابدأ تحميل الفيديو الثاني بعد 1.5 ثانية فقط (يعطي الأول وقت يبدأ)
   React.useEffect(() => {
     if (preloadStarted.current) return;
     preloadStarted.current = true;
     const t = setTimeout(() => {
-      const secondVideo = videoRefs.current[1];
-      if (secondVideo) {
-        secondVideo.preload = "auto";
-        // إجبار المتصفح على بدء التحميل الفعلي
-        secondVideo.load();
-      }
-    }, 4000); // زيادة التأخير إلى 4 ثواني
+      const v2 = videoRefs.current[1];
+      if (!v2) return;
+      v2.preload = "auto";
+      v2.load();
+      // عند جهوز الفيديو الثاني للتشغيل — علّم نفسك
+      const onReady = () => { nextReadyRef.current = true; };
+      v2.addEventListener("canplaythrough", onReady, { once: true });
+    }, 1500);
     return () => clearTimeout(t);
   }, []);
 
+  // عند انتهاء الفيديو الحالي — انتقل للتالي أو كرر الأول إن لم يجهز بعد
   const onEnded = useCallback(() => {
-    setIdx(prev => {
-      const nextIdx = (prev + 1) % BG_VIDEOS.length;
-      const nextVideo = videoRefs.current[nextIdx];
-      if (nextVideo) {
-        nextVideo.currentTime = 0;
-        nextVideo.play().catch(() => {});
-      }
-      return nextIdx;
-    });
-  }, []);
+    const v1 = videoRefs.current[0];
+    const v2 = videoRefs.current[1];
 
-  // عند تغيير الفيديو النشط — شغّل الصحيح + أخبر الـ parent
-  React.useEffect(() => {
-    const currentVideo = videoRefs.current[idx];
-    if (currentVideo && currentVideo.paused) {
-      currentVideo.play().catch(() => {});
+    if (idx === 0) {
+      // انتهى الفيديو الأول — هل الثاني جاهز؟
+      if (nextReadyRef.current && v2) {
+        v2.currentTime = 0;
+        v2.play().catch(() => {});
+        setIdx(1);
+      } else {
+        // الثاني لم يتحمل بعد — كرر الأول بدون انقطاع
+        if (v1) {
+          v1.currentTime = 0;
+          v1.play().catch(() => {});
+        }
+      }
+    } else {
+      // انتهى الفيديو الثاني — ارجع للأول ثم الثاني من جديد (loop دائمي)
+      if (v1) {
+        v1.currentTime = 0;
+        v1.play().catch(() => {});
+      }
+      setIdx(0);
     }
-    // إخبار Parent بالفيديو الحالي بعد تحديث الحالة (لا داخل setter)
+  }, [idx]);
+
+  // عند تبديل idx — أوقف الآخر وشغّل الصحيح
+  React.useEffect(() => {
+    videoRefs.current.forEach((v, i) => {
+      if (!v) return;
+      if (i === idx) {
+        if (v.paused) v.play().catch(() => {});
+      } else {
+        v.pause();
+      }
+    });
     onVideoChange(idx);
   }, [idx, onVideoChange]);
 
@@ -65,10 +86,9 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
           muted
           playsInline
           autoPlay={i === 0}
-          // الأول يُحمَّل فوراً، الثاني يبدأ بـ none ثم يُحوَّل لـ auto بعد 1.5 ثانية
           preload={i === 0 ? "auto" : "none"}
           onEnded={i === idx ? onEnded : undefined}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
             i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
         />
@@ -79,6 +99,7 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
         style={{
           background:
             "linear-gradient(to bottom, rgba(4,2,8,0.3) 0%, rgba(4,2,8,0.1) 45%, rgba(4,2,8,0.7) 100%)",
+          zIndex: 11,
         }}
       />
       {/* توهج ذهبي */}
@@ -87,11 +108,13 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
         style={{
           background:
             "radial-gradient(ellipse 70% 40% at 50% 0%, rgba(212,175,55,0.07) 0%, transparent 65%)",
+          zIndex: 12,
         }}
       />
     </div>
   );
 }
+
 
 /* ─── بطاقة ميزة ─── */
 function FeatureCard({ icon: Icon, title, desc, delay }: { icon: any; title: string; desc: string; delay: number }) {

@@ -23,11 +23,28 @@ router.get("/sitemap.xml", async (_req, res) => {
     <loc>${BASE_URL}/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
   </url>
   <url>
     <loc>${BASE_URL}/products</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+  </url>
+  <url>
+    <loc>${BASE_URL}/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${BASE_URL}/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${BASE_URL}/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   ${products.map(p => `
   <url>

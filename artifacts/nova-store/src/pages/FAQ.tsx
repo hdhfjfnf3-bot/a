@@ -1,5 +1,8 @@
+import { useEffect } from "react";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import { useState } from "react";
+
+const BASE = "https://noovaa.vercel.app";
 
 const faqs = [
   {
@@ -26,6 +29,48 @@ const faqs = [
 
 export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  useEffect(() => {
+    document.title = "الأسئلة الشائعة | NOVA Store نوفا ستور - إجابات لكل استفساراتك";
+    const setMeta = (name: string, val: string, attr = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute('content', val);
+    };
+    setMeta('description', 'إجابات لأكثر الأسئلة شيوعاً عن نوفا ستور: الدفع عند الاستلام، مدة التوصيل، ضمان الجودة، وسياسة الاستبدال.');
+    setMeta('og:title', 'الأسئلة الشائعة | نوفا ستور NOVA Store', 'property');
+    setMeta('og:url', `${BASE}/faq`, 'property');
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+    canonical.href = `${BASE}/faq`;
+
+    // FAQPage JSON-LD — يظهر كـ accordion مباشرة في نتائج جوجل!
+    const old = document.getElementById('faq-jsonld');
+    if (old) old.remove();
+    const s = document.createElement('script');
+    s.id = 'faq-jsonld';
+    s.type = 'application/ld+json';
+    s.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": faqs.map(f => ({
+        "@type": "Question",
+        "name": f.question,
+        "acceptedAnswer": { "@type": "Answer", "text": f.answer }
+      }))
+    });
+    document.head.appendChild(s);
+
+    return () => {
+      document.title = 'NOVA Store | نوفا ستور';
+      document.getElementById('faq-jsonld')?.remove();
+      const c = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (c) c.href = `${BASE}/`;
+    };
+  }, []);
+
+
 
   return (
     <div className="py-20 animate-fade-in relative overflow-hidden">

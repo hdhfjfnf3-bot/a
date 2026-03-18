@@ -192,7 +192,8 @@ export function ProductDetails() {
     const desc = product.descriptionAr || product.description || `اشتري ${name} من نوفا ستور بأفضل سعر`;
     const price = product.price;
     const image = product.images?.[0] || '/images/nova-logo-real.jpg';
-    const url = `https://nova-store.com/products/${product.id}`;
+    const url = `https://noovaa.vercel.app/products/${product.id}`;
+    const BASE = "https://noovaa.vercel.app";
 
     // ① Dynamic Page Title
     document.title = `${name} | نوفا ستور NOVA - اشتري بـ ${price} جنيه مع توصيل سريع`;
@@ -205,14 +206,14 @@ export function ProductDetails() {
     };
     setMeta('og:title',       `${name} | نوفا ستور - شراء أونلاين`);
     setMeta('og:description', `${desc} - السعر: ${price} جنيه. اطلب الآن وادفع عند الاستلام 🚀`);
-    setMeta('og:image',       image.startsWith('http') ? image : `https://nova-store.com${image}`);
+    setMeta('og:image',       image.startsWith('http') ? image : `${BASE}${image}`);
     setMeta('og:url',         url);
     setMeta('og:type',        'product');
     setMeta('product:price:amount',   String(price), 'property');
     setMeta('product:price:currency', 'EGP', 'property');
     setMeta('twitter:title',       `${name} | نوفا ستور`, 'name');
     setMeta('twitter:description', `${desc} - ${price} جنيه فقط 🔥`, 'name');
-    setMeta('twitter:image',       image.startsWith('http') ? image : `https://nova-store.com${image}`, 'name');
+    setMeta('twitter:image',       image.startsWith('http') ? image : `${BASE}${image}`, 'name');
 
     // ③ Product JSON-LD (Google Rich Results: price + stars in search 🎯)
     const oldScript = document.getElementById('product-jsonld');
@@ -272,8 +273,8 @@ export function ProductDetails() {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "نوفا ستور", "item": "https://nova-store.com/" },
-        { "@type": "ListItem", "position": 2, "name": "المنتجات", "item": "https://nova-store.com/products" },
+        { "@type": "ListItem", "position": 1, "name": "نوفا ستور", "item": "https://noovaa.vercel.app/" },
+        { "@type": "ListItem", "position": 2, "name": "المنتجات", "item": "https://noovaa.vercel.app/products" },
         { "@type": "ListItem", "position": 3, "name": name, "item": url }
       ]
     });
