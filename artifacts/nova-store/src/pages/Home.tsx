@@ -11,7 +11,7 @@ import { useRef, useState, useCallback } from "react";
 /* ─── خلفية فيديو متتالية ─── */
 // video_bg1.mp4  ← يشتغل أولاً
 // video_bg2.mp4  ← يُحمَّل في الخلفية، ثم يُشغَّل بعد انتهاء الأول فقط إذا جهز
-const BG_VIDEOS = ["video_bg1.mp4", "video_bg2.mp4"];
+const BG_VIDEOS = ["video_bg2.mp4", "video_bg1.mp4"];
 
 function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => void }) {
   const [idx, setIdx] = useState(0);
@@ -44,20 +44,20 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
       // انتهى الفيديو الأول — هل الثاني جاهز؟
       if (nextReadyRef.current && v2) {
         v2.currentTime = 0;
-        v2.play().catch(() => {});
+        v2.play().catch(() => { });
         setIdx(1);
       } else {
         // الثاني لم يتحمل بعد — كرر الأول بدون انقطاع
         if (v1) {
           v1.currentTime = 0;
-          v1.play().catch(() => {});
+          v1.play().catch(() => { });
         }
       }
     } else {
       // انتهى الفيديو الثاني — ارجع للأول ثم الثاني من جديد (loop دائمي)
       if (v1) {
         v1.currentTime = 0;
-        v1.play().catch(() => {});
+        v1.play().catch(() => { });
       }
       setIdx(0);
     }
@@ -68,7 +68,7 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
     videoRefs.current.forEach((v, i) => {
       if (!v) return;
       if (i === idx) {
-        if (v.paused) v.play().catch(() => {});
+        if (v.paused) v.play().catch(() => { });
       } else {
         v.pause();
       }
@@ -88,9 +88,8 @@ function VideoBackground({ onVideoChange }: { onVideoChange: (idx: number) => vo
           autoPlay={i === 0}
           preload={i === 0 ? "auto" : "none"}
           onEnded={i === idx ? onEnded : undefined}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
-            i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
-          }`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out ${i === idx ? "opacity-100 z-10" : "opacity-0 z-0"
+            }`}
         />
       ))}
       {/* تعتيم فاخر */}
