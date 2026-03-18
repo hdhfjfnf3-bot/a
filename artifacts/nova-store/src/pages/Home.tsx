@@ -415,7 +415,7 @@ export function Home() {
                   <span className="text-gradient-gold font-luxury block">مع مجموعتنا الحصرية</span>
                 </h2>
                 <p className="text-white/60 text-lg mb-8 max-w-lg">
-                  خصم يصل إلى <span className="text-primary font-bold">30%</span> على منتجات مختارة لفترة محدودة. تسوق الآن قبل نفاذ الكمية.
+                  خصم يصل إلى <span className="text-primary font-bold">90%</span> على منتجات مختارة لفترة محدودة. تسوق الآن قبل نفاذ الكمية.
                 </p>
                 <Link href="/products">
                   <Button
@@ -431,7 +431,7 @@ export function Home() {
               {/* Stats column */}
               <div className="flex-shrink-0 flex flex-col gap-5">
                 {[
-                  { value: "30%", label: "أقصى خصم" },
+                  { value: "90%", label: "أقصى خصم" },
                   { value: "24h", label: "توصيل سريع" },
                   { value: "100%", label: "رضا مضمون" },
                 ].map((s, i) => (
