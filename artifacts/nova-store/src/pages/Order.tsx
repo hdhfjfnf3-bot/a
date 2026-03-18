@@ -296,7 +296,7 @@ ${data.notes ? `📝 ملاحظات: ${data.notes}` : ""}
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-primary font-bold">3.</span>
-                  <span>الدفع عند الاستلام أو عبر فودافون كاش</span>
+                  <span>خيارات دفع آمنة 100%</span>
                 </div>
               </div>
             )}

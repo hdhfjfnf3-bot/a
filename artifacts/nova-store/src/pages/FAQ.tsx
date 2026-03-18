@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     question: "ما هي طرق الدفع المتاحة؟",
-    answer: "لتوفير أقصى درجات الأمان والراحة لعملائنا، نعتمد حالياً نظام الدفع عند الاستلام (Cash on Delivery). تدفع فقط عندما تستلم طلبك وتتأكد منه."
+    answer: "نقدم خيارات دفع مريحة وآمنة وموثوقة لضمان تجربة تسوق سلسة وفاخرة تليق بعملائنا الموقرين."
   },
   {
     question: "ماذا أفعل إذا استلمت منتجأً به عيب أو غير مطابق للطلب؟",
@@ -37,7 +37,7 @@ export function FAQ() {
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', val);
     };
-    setMeta('description', 'إجابات لأكثر الأسئلة شيوعاً عن نوفا ستور: الدفع عند الاستلام، مدة التوصيل، ضمان الجودة، وسياسة الاستبدال.');
+    setMeta('description', 'إجابات لأكثر الأسئلة شيوعاً عن نوفا ستور: خيارات الدفع الآمنة، مدة التوصيل، ضمان الجودة، وسياسة الاستبدال.');
     setMeta('og:title', 'الأسئلة الشائعة | نوفا ستور NOVA Store', 'property');
     setMeta('og:url', `${BASE}/faq`, 'property');
 

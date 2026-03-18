@@ -28,8 +28,8 @@ export function Shipping() {
           <div className="glass-panel p-8 rounded-2xl flex items-start gap-4">
             <Wallet className="w-8 h-8 text-green-500 shrink-0 mt-1" />
             <div>
-              <h3 className="text-xl font-bold mb-2 text-foreground">الدفع عند الاستلام</h3>
-              <p className="text-muted-foreground">لأن ثقتك تهمنا، نوفر لك خيار الدفع عند الاستلام (Cash on Delivery). لا تدفع شيئاً حتى تتأكد من طلبك بنفسك.</p>
+              <h3 className="text-xl font-bold mb-2 text-foreground">دفع آمن ومضمون</h3>
+              <p className="text-muted-foreground">لأن راحتك تهمنا، نوفر لك خيارات دفع مرنة وآمنة لتستمتع بتجربة تسوق لا مثيل لها.</p>
             </div>
           </div>
 

@@ -12,7 +12,7 @@ export function About() {
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', val);
     };
-    setMeta('description', 'تعرف على نوفا ستور - متجر إلكتروني موثوق في مصر يقدم منتجات فاخرة أصلية بضمان الجودة والدفع عند الاستلام.');
+    setMeta('description', 'تعرف على نوفا ستور - متجر إلكتروني موثوق في مصر يقدم منتجات فاخرة أصلية بضمان الجودة والتوصيل السريع المستمر.');
     setMeta('og:title', 'من نحن | نوفا ستور NOVA Store', 'property');
     setMeta('og:url', `${BASE}/about`, 'property');
 
