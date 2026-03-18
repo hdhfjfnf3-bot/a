@@ -22,8 +22,8 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
   };
 
   useEffect(() => {
-    // timeout احتياطي للنهاية لضمان عدم بقاء اللودر للأبد: 6 ثواني كحد أقصى (تم تقليله من 8 لسرعة التجربة)
-    const safetyTimer = setTimeout(finish, 6000);
+    // timeout احتياطي للنهاية لضمان عدم بقاء اللودر للأبد: (15 ثانية كحد أقصى لتأمين تشغيل الفيديو بالكامل)
+    const safetyTimer = setTimeout(finish, 15000);
 
     return () => {
       clearTimeout(safetyTimer);
@@ -76,6 +76,9 @@ export function NovaLoader({ onDone }: { onDone: () => void }) {
             preload="auto"
             onEnded={finish}
             onError={finish}
+            onPlaying={() => {
+              // اختياري: إذا كان الفيديو يشتغل بشكل جيد
+            }}
             className="absolute inset-0 w-full h-full object-contain z-10"
           />
 
