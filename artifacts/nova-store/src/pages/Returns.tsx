@@ -29,23 +29,23 @@ export function Returns() {
           </div>
 
           <div className="glass-panel p-8 rounded-2xl">
-            <h2 className="text-2xl font-bold mb-4 text-foreground">سياسة استرجاع مرنة خلال 14 يوماً</h2>
+            <h2 className="text-2xl font-bold mb-4 text-foreground">شروط وضوابط الاسترجاع</h2>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
-                <CheckCircle className="w-6 h-6 text-green-500 shrink-0 mt-1" />
-                <span className="text-lg text-muted-foreground">يحق للعميل استبدال أو استرجاع المنتج خلال 14 يوماً من تاريخ استلامه.</span>
+                <CheckCircle className="w-6 h-6 text-amber-500 shrink-0 mt-1" />
+                <span className="text-lg text-muted-foreground font-semibold">غير متاح الاسترجاع لمجرد تغيير الرأي أو عدم الرغبة في المنتج.</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle className="w-6 h-6 text-green-500 shrink-0 mt-1" />
-                <span className="text-lg text-muted-foreground">يجب أن يكون المنتج في حالته الأصلية، غير مستخدم، وبكافة ملحقاته وعبوته الأصلية.</span>
+                <span className="text-lg text-muted-foreground">الاسترجاع أو الاستبدال متاح <span className="text-foreground font-bold">فقط</span> في حالة وجود عيب صناعة أو تلف واضح بالمنتج.</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle className="w-6 h-6 text-green-500 shrink-0 mt-1" />
-                <span className="text-lg text-muted-foreground">في حالة وجود عيب صناعة، يتكفل المتجر بكافة مصاريف الشحن للاستبدال أو الاسترجاع.</span>
+                <span className="text-lg text-muted-foreground">يُشترط التواصل معنا وإرسال صور واضحة توثق العيب خلال <span className="text-foreground font-bold text-red-400">48 ساعة</span> كحد أقصى من وقت استلام الأوردر.</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle className="w-6 h-6 text-green-500 shrink-0 mt-1" />
-                <span className="text-lg text-muted-foreground">في حال الرغبة في الاستبدال لتغيير المقاس أو اللون (بدون عيب)، يتحمل العميل تكلفة شحن الاستبدال الرمزية.</span>
+                <span className="text-lg text-muted-foreground">في حالة ثبوت العيب، يتكفل المتجر بجميع مصاريف الشحن الخاصة بالاسترجاع أو الاستبدال.</span>
               </li>
             </ul>
           </div>
